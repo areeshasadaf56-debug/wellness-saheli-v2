@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../config/api_config.dart';
 
@@ -70,10 +69,6 @@ class PcosApiService {
       response = await http
           .post(uri, headers: {'Content-Type': 'application/json'}, body: body)
           .timeout(const Duration(seconds: 30));
-    } on SocketException {
-      throw Exception(
-        'No internet connection. Please check your network and try again.',
-      );
     } on http.ClientException {
       throw Exception(
         'Could not reach the server right now. Please try again shortly.',

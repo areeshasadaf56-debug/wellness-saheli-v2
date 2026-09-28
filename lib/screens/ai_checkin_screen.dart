@@ -1,5 +1,10 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:file_picker/file_picker.dart';
 import '../theme/app_theme.dart';
 import '../models/health_profile.dart';
 import '../providers/cycle_provider.dart';
@@ -50,6 +55,25 @@ class _AiCheckinScreenState extends State<AiCheckinScreen> {
   String? _pendingSuggestedReason;
   String? _errorText;
 
+  // --- Language toggle (English / Urdu) ---
+  // Persisted so the choice survives app restarts. The backend must
+  // read `language` from the /chat request and reply accordingly --
+  // see AiService.sendMessage.
+  String _language = 'en';
+  static const _languageKey = 'ai_checkin_language';
+
+  // --- Voice input (speech-to-text) ---
+  final stt.SpeechToText _speech = stt.SpeechToText();
+  bool _speechAvailable = false;
+  bool _listening = false;
+
+  // --- File/image attachment ---
+  PlatformFile? _pendingAttachment;
+  bool _pickingFile = false;
+
+  // --- Enter-to-send on desktop/web ---
+  final FocusNode _inputFocusNode = FocusNode();
+
   static const _openingGreeting =
       "Hi -- I'm here to check in on how you've really been. Take your "
       "time, there's no rush. How have you been feeling lately, overall?";
@@ -58,13 +82,160 @@ class _AiCheckinScreenState extends State<AiCheckinScreen> {
   void initState() {
     super.initState();
     _loadInitialState();
+    _loadLanguagePreference();
+    _initSpeech();
   }
 
   @override
   void dispose() {
     _inputController.dispose();
     _scrollController.dispose();
+    _inputFocusNode.dispose();
+    if (_listening) _speech.stop();
     super.dispose();
+  }
+
+  Future<void> _loadLanguagePreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getString(_languageKey);
+    if (saved != null && mounted) {
+      setState(() => _language = saved);
+    }
+  }
+
+  Future<void> _toggleLanguage() async {
+    final next = _language == 'en' ? 'ur' : 'en';
+    setState(() => _language = next);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_languageKey, next);
+  }
+
+  /// Sets up the 2speech recognizer. On Flutter web this uses the
+  /// browser's built-in Web Speech API -- it works in Chrome/Edge but
+  /// isn't supported in every browser, hence the availability check.
+  Future<void> _initSpeech() async {
+    final available = await _speech.initialize(
+      onError: (err) {
+        if (!mounted) return;
+        setState(() {
+          _listening = false;
+          _errorText = 'Voice input error: ${err.errorMsg}';
+        });
+      },
+      onStatus: (status) {
+        if (!mounted) return;
+        if (status == 'done' || status == 'notListening') {
+          setState(() => _listening = false);
+        }
+      },
+    );
+    if (mounted) setState(() => _speechAvailable = available);
+  }
+
+  Future<void> _toggleListening() async {
+    if (!_speechAvailable) {
+      setState(
+        () => _errorText =
+            'Voice input isn\'t available in this browser. Try Chrome or Edge.',
+      );
+      return;
+    }
+
+    if (_listening) {
+      await _speech.stop();
+      setState(() => _listening = false);
+      return;
+    }
+
+    setState(() {
+      _listening = true;
+      _errorText = null;
+    });
+
+    await _speech.listen(
+      localeId: _language == 'ur' ? 'ur_PK' : 'en_US',
+      onResult: (result) {
+        setState(() {
+          // Live-update the text field as words are recognized; final
+          // punctuation/casing cleanup is left to the user before send.
+          _inputController.text = result.recognizedWords;
+          _inputController.selection = TextSelection.collapsed(
+            offset: _inputController.text.length,
+          );
+        });
+      },
+    );
+  }
+
+  /// Opens the file/image picker and stages the result as a pending
+  /// attachment shown above the input bar (sent along with the next
+  /// message, or removable before then).
+  Future<void> _pickAttachment() async {
+    if (_pickingFile) return;
+    setState(() => _pickingFile = true);
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: [
+          'png',
+          'jpg',
+          'jpeg',
+          'gif',
+          'webp',
+          'pdf',
+          'doc',
+          'docx',
+          'txt',
+        ],
+        withData: true, // needed on web to get raw bytes
+      );
+      if (result == null || result.files.isEmpty) return;
+      final file = result.files.first;
+      if (file.bytes == null) {
+        setState(() => _errorText = 'Could not read that file. Try again.');
+        return;
+      }
+      // Keep uploads reasonably small -- large base64 payloads can time
+      // out the /chat request or exceed the backend's body-size limit.
+      const maxBytes = 8 * 1024 * 1024; // 8 MB
+      if (file.bytes!.length > maxBytes) {
+        setState(() => _errorText = '${file.name} is too large (max 8 MB).');
+        return;
+      }
+      setState(() {
+        _pendingAttachment = file;
+        _errorText = null;
+      });
+    } finally {
+      if (mounted) setState(() => _pickingFile = false);
+    }
+  }
+
+  void _removeAttachment() {
+    setState(() => _pendingAttachment = null);
+  }
+
+  String _mimeTypeFor(String fileName) {
+    final ext = fileName.toLowerCase().split('.').last;
+    switch (ext) {
+      case 'png':
+        return 'image/png';
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'gif':
+        return 'image/gif';
+      case 'webp':
+        return 'image/webp';
+      case 'pdf':
+        return 'application/pdf';
+      case 'doc':
+        return 'application/msword';
+      case 'docx':
+        return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      default:
+        return 'text/plain';
+    }
   }
 
   List<_ChatSession> _sessionsFrom(HealthProfile p) {
@@ -266,7 +437,8 @@ class _AiCheckinScreenState extends State<AiCheckinScreen> {
 
   Future<void> _sendMessage() async {
     final text = _inputController.text.trim();
-    if (text.isEmpty || _sending) return;
+    final attachment = _pendingAttachment;
+    if ((text.isEmpty && attachment == null) || _sending) return;
 
     _inputController.clear();
     setState(() {
@@ -274,6 +446,7 @@ class _AiCheckinScreenState extends State<AiCheckinScreen> {
       _errorText = null;
       _pendingSuggestedTab = null;
       _pendingSuggestedReason = null;
+      _pendingAttachment = null;
     });
 
     final historyForRequest = _profile!.privacySettings.aiMemoryEnabled
@@ -282,10 +455,14 @@ class _AiCheckinScreenState extends State<AiCheckinScreen> {
 
     final profileContext = _buildProfileContext();
 
+    // If there's no typed text but there is an attachment, still show
+    // something sensible in the chat bubble.
+    final displayText = text.isNotEmpty ? text : '📎 ${attachment!.name}';
+
     final userEntry = ConversationEntry(
       timestamp: DateTime.now(),
       role: 'user',
-      message: text,
+      message: displayText,
       sessionId: _currentSessionId,
     );
     setState(() => _messages.add(userEntry));
@@ -293,18 +470,23 @@ class _AiCheckinScreenState extends State<AiCheckinScreen> {
 
     await _profileService.appendConversationEntry(
       'user',
-      text,
+      displayText,
       sessionId: _currentSessionId,
     );
 
     try {
-      if (!mounted) return;
-      final authToken = context.read<CycleProvider>().authToken;
       final result = await _aiService.sendMessage(
         message: text,
         history: historyForRequest,
-        authToken: authToken,
         profileContext: profileContext,
+        language: _language,
+        attachment: attachment == null
+            ? null
+            : ChatAttachment(
+                fileName: attachment.name,
+                mimeType: _mimeTypeFor(attachment.name),
+                base64Data: base64Encode(attachment.bytes!),
+              ),
       );
 
       final assistantEntry = ConversationEntry(
@@ -342,8 +524,8 @@ class _AiCheckinScreenState extends State<AiCheckinScreen> {
       if (!mounted) return;
       setState(() {
         _sending = false;
-        _errorText = e.toString().contains('not_signed_in')
-            ? 'Please sign in to use AI Check-in.'
+        _errorText = e is AuthRequiredException
+            ? e.message
             : "Couldn't reach the check-in assistant. Please try again.";
       });
     }
@@ -493,6 +675,7 @@ class _AiCheckinScreenState extends State<AiCheckinScreen> {
                 style: AppTextStyles.sans(size: 12, color: AppColors.periodRed),
               ),
             ),
+          if (_pendingAttachment != null) _attachmentChip(),
           _inputBar(),
         ],
       ),
@@ -523,6 +706,35 @@ class _AiCheckinScreenState extends State<AiCheckinScreen> {
             child: Text(
               'Saheli',
               style: AppTextStyles.sans(size: 15, weight: FontWeight.w700),
+            ),
+          ),
+          GestureDetector(
+            onTap: _toggleLanguage,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              margin: const EdgeInsets.only(right: 4),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.4),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.translate, size: 14, color: AppColors.primary),
+                  const SizedBox(width: 4),
+                  Text(
+                    _language == 'en' ? 'EN' : 'اردو',
+                    style: AppTextStyles.sans(
+                      size: 12,
+                      weight: FontWeight.w700,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           IconButton(
@@ -739,6 +951,59 @@ class _AiCheckinScreenState extends State<AiCheckinScreen> {
     );
   }
 
+  Widget _attachmentChip() {
+    final file = _pendingAttachment!;
+    final isImage = _mimeTypeFor(file.name).startsWith('image/');
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            isImage ? Icons.image_outlined : Icons.insert_drive_file_outlined,
+            size: 16,
+            color: AppColors.primary,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              file.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTextStyles.sans(size: 12.5, weight: FontWeight.w600),
+            ),
+          ),
+          GestureDetector(
+            onTap: _removeAttachment,
+            child: Icon(Icons.close, size: 16, color: AppColors.textSecondary),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Intercepts the hardware Enter key on desktop/web so it sends the
+  /// message instead of inserting a newline. Shift+Enter still inserts
+  /// a newline for multi-line messages.
+  KeyEventResult _handleKey(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+    final isEnter =
+        event.logicalKey == LogicalKeyboardKey.enter ||
+        event.logicalKey == LogicalKeyboardKey.numpadEnter;
+    if (!isEnter) return KeyEventResult.ignored;
+
+    final shiftHeld = HardwareKeyboard.instance.isShiftPressed;
+    if (shiftHeld) return KeyEventResult.ignored; // allow newline
+
+    _sendMessage();
+    return KeyEventResult.handled;
+  }
+
   Widget _inputBar() {
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
@@ -757,35 +1022,58 @@ class _AiCheckinScreenState extends State<AiCheckinScreen> {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             IconButton(
-              onPressed: null,
-              icon: const Icon(Icons.add),
+              onPressed: _pickingFile ? null : _pickAttachment,
+              icon: _pickingFile
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.add),
               color: AppColors.textSecondary,
               iconSize: 20,
+              tooltip: 'Attach a photo or document',
             ),
             Expanded(
-              child: TextField(
-                controller: _inputController,
-                minLines: 1,
-                maxLines: 4,
-                textCapitalization: TextCapitalization.sentences,
-                onSubmitted: (_) => _sendMessage(),
-                decoration: InputDecoration(
-                  hintText: 'Message Saheli…',
-                  hintStyle: AppTextStyles.sans(
-                    size: 13,
-                    color: AppColors.textSecondary,
+              child: Focus(
+                onKeyEvent: _handleKey,
+                child: TextField(
+                  controller: _inputController,
+                  focusNode: _inputFocusNode,
+                  minLines: 1,
+                  maxLines: 4,
+                  textCapitalization: TextCapitalization.sentences,
+                  textDirection: _language == 'ur'
+                      ? TextDirection.rtl
+                      : TextDirection.ltr,
+                  onSubmitted: (_) => _sendMessage(),
+                  decoration: InputDecoration(
+                    hintText: _listening
+                        ? 'Listening…'
+                        : (_language == 'ur'
+                              ? 'سہیلی کو پیغام بھیجیں…'
+                              : 'Message Saheli…'),
+                    hintStyle: AppTextStyles.sans(
+                      size: 13,
+                      color: AppColors.textSecondary,
+                    ),
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 10),
                   ),
-                  border: InputBorder.none,
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 10),
                 ),
               ),
             ),
             IconButton(
-              onPressed: null,
-              icon: const Icon(Icons.mic_none_rounded),
-              color: AppColors.textSecondary,
+              onPressed: _toggleListening,
+              icon: Icon(
+                _listening ? Icons.mic_rounded : Icons.mic_none_rounded,
+              ),
+              color: _listening ? AppColors.periodRed : AppColors.textSecondary,
               iconSize: 20,
+              tooltip: _speechAvailable
+                  ? (_listening ? 'Stop recording' : 'Voice message')
+                  : 'Voice input not supported in this browser',
             ),
             _sending
                 ? const SizedBox(

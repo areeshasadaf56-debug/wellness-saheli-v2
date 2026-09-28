@@ -998,11 +998,37 @@ class _PcosScreenState extends State<PcosScreen> {
       // Save into the diary/profile so history + future AI check-ins
       // can reference it -- fire-and-forget, shouldn't block the result
       // from showing.
-      HealthProfileService().appendPcosResult(
+      final service = HealthProfileService();
+      service.appendPcosResult(
         prediction: result.prediction,
         pcosProbability: result.pcosProbability,
         modelUsed: result.modelUsed,
       );
+
+      // Persist the form inputs back to the profile so Demographics
+      // and ReproductiveHistory are no longer permanently "Not set".
+      service.updateProfile((p) {
+        final age = int.tryParse(_ageController.text.trim());
+        final weight = double.tryParse(_weightController.text.trim());
+        final height = double.tryParse(_heightController.text.trim());
+        final cycleLen = int.tryParse(_cycleLengthController.text.trim());
+
+        return p.copyWith(
+          demographics: p.demographics.copyWith(
+            ageYrs: age,
+            weightKg: weight,
+            heightCm: height,
+          ),
+          reproductiveHistory: p.reproductiveHistory.copyWith(
+            cycleRegularity: _cycleRegularity,
+            cycleLengthDays: cycleLen,
+          ),
+          lifestyle: p.lifestyle.copyWith(
+            regularExercise: _regularExercise,
+            fastFoodFrequent: _fastFood,
+          ),
+        );
+      });
     } catch (e) {
       setState(() {
         _isLoading = false;

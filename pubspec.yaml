@@ -40,6 +40,12 @@ dependencies:
   shared_preferences: ^2.5.5
   google_fonts: ^8.1.0
 
+  # AI Check-in: voice-to-text input (uses the browser's Web Speech API
+  # on Flutter web, native speech recognition on mobile).
+  speech_to_text: ^7.0.0
+  # AI Check-in: attaching documents/images to a chat message.
+  file_picker: ^8.1.2
+
  
 dev_dependencies:
   flutter_test:
