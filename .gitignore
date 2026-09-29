@@ -57,3 +57,10 @@ local.properties
 *.keystore
 key.properties
 local.properties
+
+# Secrets
+.env
+*.jks
+*.keystore
+key.properties
+local.properties
