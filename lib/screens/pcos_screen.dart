@@ -1,23 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../theme/app_theme.dart';
 import '../services/pcos_api_service.dart';
 import '../services/health_profile_service.dart';
-
-/// A single bullet/paragraph line inside a card body.
-/// If [boldLead] is set, it's rendered bold and inline before [text].
-class PcosLine {
-  final String? boldLead;
-  final String text;
-  final String? number; // e.g. "1", "2", "3" for numbered criteria
-
-  const PcosLine({this.boldLead, required this.text, this.number});
-}
-
-class PcosTag {
-  final String label;
-  final Color color;
-  const PcosTag(this.label, this.color);
-}
+import '../widgets/pcos_card.dart';
 
 class PcosScreen extends StatefulWidget {
   const PcosScreen({super.key});
@@ -47,8 +33,13 @@ class _PcosScreenState extends State<PcosScreen> {
   final _avgFSizeLController = TextEditingController();
   final _avgFSizeRController = TextEditingController();
   final _endometriumController = TextEditingController();
+  final _notesController = TextEditingController();
 
   String _cycleRegularity = 'Regular';
+
+  // Optional extras. NOT used by the model; kept on this screen only.
+  String? _maritalStatus; // 'Married', 'Unmarried', 'Prefer not to say'
+
   bool _weightGain = false;
   bool _hairGrowth = false;
   bool _skinDarkening = false;
@@ -62,16 +53,38 @@ class _PcosScreenState extends State<PcosScreen> {
   String? _errorText;
   bool _prefilled = false;
 
+  List<TextEditingController> get _requiredControllers => [
+    _ageController,
+    _weightController,
+    _heightController,
+    _cycleLengthController,
+    _prlController,
+    _vitD3Controller,
+    _prgController,
+    _rbsController,
+    _bpSystolicController,
+    _bpDiastolicController,
+    _follicleLController,
+    _follicleRController,
+    _avgFSizeLController,
+    _avgFSizeRController,
+    _endometriumController,
+  ];
+
+  double get _progress {
+    final all = _requiredControllers;
+    final filled = all.where((c) => c.text.trim().isNotEmpty).length;
+    return filled / all.length;
+  }
+
   @override
   void initState() {
     super.initState();
     _prefillFromProfile();
   }
 
-  /// Pre-fills whatever the AI check-in / diary already knows, so the
-  /// person doesn't retype data she's already given the app. Only fills
-  /// fields that are currently empty -- never overwrites something she's
-  /// already typed into the form.
+  /// Pre-fills whatever the AI check-in / diary already knows. Only fills
+  /// empty fields -- never overwrites something already typed.
   Future<void> _prefillFromProfile() async {
     final profile = await HealthProfileService().loadProfile();
     if (!mounted) return;
@@ -119,21 +132,10 @@ class _PcosScreenState extends State<PcosScreen> {
 
   @override
   void dispose() {
-    _ageController.dispose();
-    _weightController.dispose();
-    _heightController.dispose();
-    _cycleLengthController.dispose();
-    _prlController.dispose();
-    _vitD3Controller.dispose();
-    _prgController.dispose();
-    _rbsController.dispose();
-    _bpSystolicController.dispose();
-    _bpDiastolicController.dispose();
-    _follicleLController.dispose();
-    _follicleRController.dispose();
-    _avgFSizeLController.dispose();
-    _avgFSizeRController.dispose();
-    _endometriumController.dispose();
+    for (final c in _requiredControllers) {
+      c.dispose();
+    }
+    _notesController.dispose();
     super.dispose();
   }
 
@@ -488,8 +490,234 @@ class _PcosScreenState extends State<PcosScreen> {
   }
 
   // =========================================================
-  // DETECTION TAB — now a real, working form (no Coming Soon)
+  // DETECTION TAB (redesigned)
   // =========================================================
+  List<Widget> _buildDetectionTab() {
+    return [
+      _detectionHeroCard(),
+      const SizedBox(height: 14),
+      _progressBar(),
+      const SizedBox(height: 14),
+      if (_prefilled) ...[_prefillBanner(), const SizedBox(height: 14)],
+      Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _stepCard(
+              icon: Icons.person_outline,
+              color: AppColors.primary,
+              title: 'About you',
+              helper:
+                  'Basic details. Height and weight are used to work out BMI.',
+              children: [
+                _fieldRow(
+                  _numberField('Age (yrs)', _ageController, hint: 'e.g. 24'),
+                  _numberField(
+                    'Weight (kg)',
+                    _weightController,
+                    hint: 'e.g. 58',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _numberField(
+                  'Height (cm)',
+                  _heightController,
+                  hint: 'e.g. 162',
+                ),
+                const SizedBox(height: 14),
+                _fieldLabel('MARITAL STATUS (OPTIONAL)'),
+                const SizedBox(height: 6),
+                _maritalStatusChips(),
+                const SizedBox(height: 6),
+                Text(
+                  'Not used for the prediction. It only appears in the summary you can share with your doctor.',
+                  style: AppTextStyles.sans(
+                    size: 10.5,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+            _stepCard(
+              icon: Icons.calendar_month_outlined,
+              color: AppColors.periodRed,
+              title: 'Your cycle',
+              helper: 'Think about your last few months.',
+              children: [
+                _fieldLabel('CYCLE REGULARITY'),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Expanded(child: _regularityOption('Regular')),
+                    const SizedBox(width: 10),
+                    Expanded(child: _regularityOption('Irregular')),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                _numberField(
+                  'Cycle length (days)',
+                  _cycleLengthController,
+                  hint: 'e.g. 30',
+                ),
+              ],
+            ),
+            _stepCard(
+              icon: Icons.science_outlined,
+              color: AppColors.ovulationTeal,
+              title: 'Lab results',
+              helper: 'Enter values from your latest blood tests and check-up.',
+              children: [
+                _fieldRow(
+                  _numberField(
+                    'PRL (ng/mL)',
+                    _prlController,
+                    hint: 'e.g. 18.5',
+                  ),
+                  _numberField(
+                    'Vit D3 (ng/mL)',
+                    _vitD3Controller,
+                    hint: 'e.g. 32.0',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _fieldRow(
+                  _numberField('PRG (ng/mL)', _prgController, hint: 'e.g. 1.2'),
+                  _numberField('RBS (mg/dl)', _rbsController, hint: 'e.g. 95'),
+                ),
+                const SizedBox(height: 12),
+                _fieldRow(
+                  _numberField(
+                    'Systolic (mmHg)',
+                    _bpSystolicController,
+                    hint: 'e.g. 120',
+                  ),
+                  _numberField(
+                    'Diastolic (mmHg)',
+                    _bpDiastolicController,
+                    hint: 'e.g. 80',
+                  ),
+                ),
+              ],
+            ),
+            _stepCard(
+              icon: Icons.monitor_heart_outlined,
+              color: AppColors.accent,
+              title: 'Ultrasound',
+              helper:
+                  'Use the numbers from your scan report. The result is only meaningful with real scan values.',
+              children: [
+                _fieldRow(
+                  _numberField(
+                    'Follicle No. (L)',
+                    _follicleLController,
+                    hint: 'e.g. 12',
+                  ),
+                  _numberField(
+                    'Follicle No. (R)',
+                    _follicleRController,
+                    hint: 'e.g. 11',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _fieldRow(
+                  _numberField(
+                    'Avg. F size (L) (mm)',
+                    _avgFSizeLController,
+                    hint: 'e.g. 8.5',
+                  ),
+                  _numberField(
+                    'Avg. F size (R) (mm)',
+                    _avgFSizeRController,
+                    hint: 'e.g. 8.2',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _numberField(
+                  'Endometrium (mm)',
+                  _endometriumController,
+                  hint: 'e.g. 7.0',
+                ),
+              ],
+            ),
+            _stepCard(
+              icon: Icons.favorite_border,
+              color: AppColors.symptomOrange,
+              title: 'Symptoms',
+              helper: 'Switch on anything you have noticed recently.',
+              children: [
+                _toggleRow(
+                  'Weight gain',
+                  _weightGain,
+                  (v) => setState(() => _weightGain = v),
+                ),
+                _toggleRow(
+                  'Excess hair growth',
+                  _hairGrowth,
+                  (v) => setState(() => _hairGrowth = v),
+                ),
+                _toggleRow(
+                  'Skin darkening',
+                  _skinDarkening,
+                  (v) => setState(() => _skinDarkening = v),
+                ),
+                _toggleRow(
+                  'Hair loss',
+                  _hairLoss,
+                  (v) => setState(() => _hairLoss = v),
+                ),
+                _toggleRow(
+                  'Pimples',
+                  _pimples,
+                  (v) => setState(() => _pimples = v),
+                ),
+              ],
+            ),
+            _stepCard(
+              icon: Icons.spa_outlined,
+              color: AppColors.ovulationTeal,
+              title: 'Lifestyle',
+              helper: 'Your usual habits.',
+              children: [
+                _toggleRow(
+                  'Frequent fast food',
+                  _fastFood,
+                  (v) => setState(() => _fastFood = v),
+                ),
+                _toggleRow(
+                  'Regular exercise',
+                  _regularExercise,
+                  (v) => setState(() => _regularExercise = v),
+                ),
+              ],
+            ),
+            _stepCard(
+              icon: Icons.edit_note,
+              color: AppColors.primary,
+              title: 'Anything else?',
+              helper:
+                  'Optional. Medications, family history, other symptoms. Not used for the prediction, but included in your doctor summary.',
+              children: [_notesField()],
+            ),
+            const SizedBox(height: 4),
+            _submitButton(),
+            if (_errorText != null) ...[
+              const SizedBox(height: 16),
+              Text(
+                _errorText!,
+                style: AppTextStyles.sans(size: 12, color: AppColors.periodRed),
+              ),
+            ],
+            if (_result != null) ...[
+              const SizedBox(height: 20),
+              _resultCard(_result!),
+            ],
+          ],
+        ),
+      ),
+    ];
+  }
+
   Widget _prefillBanner() {
     return Container(
       width: double.infinity,
@@ -519,166 +747,9 @@ class _PcosScreenState extends State<PcosScreen> {
     );
   }
 
-  List<Widget> _buildDetectionTab() {
-    return [
-      _detectionHeroCard(),
-      const SizedBox(height: 16),
-      if (_prefilled) _prefillBanner(),
-      const SizedBox(height: 8),
-      Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _sectionLabel('PERSONAL DETAILS'),
-            const SizedBox(height: 12),
-            _fieldRow(
-              _numberField('Age (yrs)', _ageController, hint: 'e.g. 24'),
-              _numberField('Weight (kg)', _weightController, hint: 'e.g. 58'),
-            ),
-            const SizedBox(height: 12),
-            _fieldRow(
-              _numberField('Height (cm)', _heightController, hint: 'e.g. 162'),
-              _numberField(
-                'Cycle length (days)',
-                _cycleLengthController,
-                hint: 'e.g. 30',
-              ),
-            ),
-            const SizedBox(height: 12),
-            _cycleRegularityToggle(),
-            const SizedBox(height: 20),
-
-            _sectionLabel('HORMONAL & LAB MARKERS'),
-            const SizedBox(height: 12),
-            _fieldRow(
-              _numberField('PRL (ng/mL)', _prlController, hint: 'e.g. 18.5'),
-              _numberField(
-                'Vit D3 (ng/mL)',
-                _vitD3Controller,
-                hint: 'e.g. 32.0',
-              ),
-            ),
-            const SizedBox(height: 12),
-            _fieldRow(
-              _numberField('PRG (ng/mL)', _prgController, hint: 'e.g. 1.2'),
-              _numberField('RBS (mg/dl)', _rbsController, hint: 'e.g. 95'),
-            ),
-            const SizedBox(height: 20),
-
-            _sectionLabel('BLOOD PRESSURE'),
-            const SizedBox(height: 12),
-            _fieldRow(
-              _numberField(
-                'Systolic (mmHg)',
-                _bpSystolicController,
-                hint: 'e.g. 120',
-              ),
-              _numberField(
-                'Diastolic (mmHg)',
-                _bpDiastolicController,
-                hint: 'e.g. 80',
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            _sectionLabel('ULTRASOUND FINDINGS'),
-            const SizedBox(height: 12),
-            _fieldRow(
-              _numberField(
-                'Follicle No. (L)',
-                _follicleLController,
-                hint: 'e.g. 12',
-              ),
-              _numberField(
-                'Follicle No. (R)',
-                _follicleRController,
-                hint: 'e.g. 11',
-              ),
-            ),
-            const SizedBox(height: 12),
-            _fieldRow(
-              _numberField(
-                'Avg. F size (L) (mm)',
-                _avgFSizeLController,
-                hint: 'e.g. 8.5',
-              ),
-              _numberField(
-                'Avg. F size (R) (mm)',
-                _avgFSizeRController,
-                hint: 'e.g. 8.2',
-              ),
-            ),
-            const SizedBox(height: 12),
-            _numberField(
-              'Endometrium (mm)',
-              _endometriumController,
-              hint: 'e.g. 7.0',
-            ),
-            const SizedBox(height: 20),
-
-            _sectionLabel('SYMPTOMS & LIFESTYLE'),
-            const SizedBox(height: 12),
-            _toggleRow(
-              'Weight Gain',
-              _weightGain,
-              (v) => setState(() => _weightGain = v),
-            ),
-            _toggleRow(
-              'Hair Growth',
-              _hairGrowth,
-              (v) => setState(() => _hairGrowth = v),
-            ),
-            _toggleRow(
-              'Skin Darkening',
-              _skinDarkening,
-              (v) => setState(() => _skinDarkening = v),
-            ),
-            _toggleRow(
-              'Hair Loss',
-              _hairLoss,
-              (v) => setState(() => _hairLoss = v),
-            ),
-            _toggleRow(
-              'Pimples',
-              _pimples,
-              (v) => setState(() => _pimples = v),
-            ),
-            _toggleRow(
-              'Fast Food',
-              _fastFood,
-              (v) => setState(() => _fastFood = v),
-            ),
-            _toggleRow(
-              'Regular Exercise',
-              _regularExercise,
-              (v) => setState(() => _regularExercise = v),
-            ),
-
-            const SizedBox(height: 24),
-            _submitButton(),
-
-            if (_errorText != null) ...[
-              const SizedBox(height: 16),
-              Text(
-                _errorText!,
-                style: AppTextStyles.sans(size: 12, color: AppColors.periodRed),
-              ),
-            ],
-
-            if (_result != null) ...[
-              const SizedBox(height: 20),
-              _resultCard(_result!),
-            ],
-          ],
-        ),
-      ),
-    ];
-  }
-
   Widget _detectionHeroCard() {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(18),
@@ -699,11 +770,11 @@ class _PcosScreenState extends State<PcosScreen> {
               child: Text('🧪', style: TextStyle(fontSize: 24)),
             ),
           ),
-          const SizedBox(height: 14),
-          Text('PCOS Detection', style: AppTextStyles.serif(size: 19)),
+          const SizedBox(height: 12),
+          Text('PCOS Risk Check', style: AppTextStyles.serif(size: 19)),
           const SizedBox(height: 8),
           Text(
-            'Enter your medical details below for an AI-powered risk assessment, using a model trained on real clinical data.',
+            'Answer a few sections to get a screening estimate. It takes about 3 minutes and helps you decide whether to talk to a doctor.',
             textAlign: TextAlign.center,
             style: AppTextStyles.sans(
               size: 12,
@@ -715,13 +786,128 @@ class _PcosScreenState extends State<PcosScreen> {
     );
   }
 
+  Widget _progressBar() {
+    final pct = (_progress * 100).round();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Form progress',
+              style: AppTextStyles.sans(
+                size: 11,
+                weight: FontWeight.w600,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            Text(
+              '$pct%',
+              style: AppTextStyles.sans(
+                size: 11,
+                weight: FontWeight.w600,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: LinearProgressIndicator(
+            value: _progress,
+            minHeight: 6,
+            backgroundColor: AppColors.cardBorder,
+            valueColor: AlwaysStoppedAnimation(AppColors.ovulationTeal),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// A rounded card with a coloured icon badge, title, helper line and body.
+  Widget _stepCard({
+    required IconData icon,
+    required Color color,
+    required String title,
+    required String helper,
+    required List<Widget> children,
+  }) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, size: 19, color: color),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: AppTextStyles.sans(
+                        size: 14,
+                        weight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      helper,
+                      style: AppTextStyles.sans(
+                        size: 11,
+                        color: AppColors.textSecondary,
+                      ).copyWith(height: 1.4),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          ...children,
+        ],
+      ),
+    );
+  }
+
   Widget _fieldRow(Widget left, Widget right) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(child: left),
         const SizedBox(width: 12),
         Expanded(child: right),
       ],
+    );
+  }
+
+  Widget _fieldLabel(String text) {
+    return Text(
+      text,
+      style: AppTextStyles.sans(
+        size: 10,
+        weight: FontWeight.w600,
+        color: AppColors.textSecondary,
+      ),
     );
   }
 
@@ -733,17 +919,11 @@ class _PcosScreenState extends State<PcosScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label.toUpperCase(),
-          style: AppTextStyles.sans(
-            size: 10,
-            weight: FontWeight.w600,
-            color: AppColors.textSecondary,
-          ),
-        ),
+        _fieldLabel(label.toUpperCase()),
         const SizedBox(height: 6),
         TextFormField(
           controller: controller,
+          onChanged: (_) => setState(() {}),
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           style: AppTextStyles.sans(size: 13, color: AppColors.textPrimary),
           decoration: InputDecoration(
@@ -781,27 +961,70 @@ class _PcosScreenState extends State<PcosScreen> {
     );
   }
 
-  Widget _cycleRegularityToggle() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'CYCLE REGULARITY',
-          style: AppTextStyles.sans(
-            size: 10,
-            weight: FontWeight.w600,
-            color: AppColors.textSecondary,
+  Widget _maritalStatusChips() {
+    const options = ['Married', 'Unmarried', 'Prefer not to say'];
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: options.map((o) {
+        final selected = _maritalStatus == o;
+        return GestureDetector(
+          onTap: () => setState(() => _maritalStatus = selected ? null : o),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+            decoration: BoxDecoration(
+              color: selected
+                  ? AppColors.primary.withValues(alpha: 0.18)
+                  : AppColors.surface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: selected
+                    ? AppColors.primary.withValues(alpha: 0.6)
+                    : AppColors.cardBorder,
+              ),
+            ),
+            child: Text(
+              o,
+              style: AppTextStyles.sans(
+                size: 12,
+                weight: FontWeight.w600,
+                color: selected
+                    ? AppColors.textPrimary
+                    : AppColors.textSecondary,
+              ),
+            ),
           ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _notesField() {
+    return TextFormField(
+      controller: _notesController,
+      minLines: 3,
+      maxLines: 6,
+      maxLength: 500,
+      style: AppTextStyles.sans(size: 13, color: AppColors.textPrimary),
+      decoration: InputDecoration(
+        hintText: 'e.g. taking metformin, family history of diabetes…',
+        hintStyle: AppTextStyles.sans(size: 13, color: AppColors.textSecondary),
+        filled: true,
+        fillColor: AppColors.surface,
+        contentPadding: const EdgeInsets.all(12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: AppColors.cardBorder),
         ),
-        const SizedBox(height: 6),
-        Row(
-          children: [
-            Expanded(child: _regularityOption('Regular')),
-            const SizedBox(width: 10),
-            Expanded(child: _regularityOption('Irregular')),
-          ],
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: AppColors.cardBorder),
         ),
-      ],
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: AppColors.ovulationTeal),
+        ),
+      ),
     );
   }
 
@@ -837,9 +1060,9 @@ class _PcosScreenState extends State<PcosScreen> {
 
   Widget _toggleRow(String label, bool value, ValueChanged<bool> onChanged) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 8),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(10),
@@ -866,13 +1089,13 @@ class _PcosScreenState extends State<PcosScreen> {
   Widget _submitButton() {
     return SizedBox(
       width: double.infinity,
-      height: 50,
+      height: 52,
       child: ElevatedButton(
         onPressed: _isLoading ? null : _onRunDetectionPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.ovulationTeal,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
           ),
         ),
         child: _isLoading
@@ -885,7 +1108,7 @@ class _PcosScreenState extends State<PcosScreen> {
                 ),
               )
             : Text(
-                'Run PCOS Detection',
+                'Check my PCOS risk',
                 style: AppTextStyles.sans(
                   size: 14,
                   weight: FontWeight.w600,
@@ -896,59 +1119,172 @@ class _PcosScreenState extends State<PcosScreen> {
     );
   }
 
+  // ---- Result: a likelihood band instead of "PCOS Detected" ----
+  ({String band, String headline, String body, Color color}) _bandFor(
+    double p,
+  ) {
+    if (p < 0.33) {
+      return (
+        band: 'Low likelihood',
+        headline: 'Lower likelihood of PCOS',
+        body:
+            'Based on what you entered, PCOS looks less likely. A low result does not rule PCOS out. If you have symptoms or concerns, please still see a doctor.',
+        color: AppColors.ovulationTeal,
+      );
+    }
+    if (p < 0.66) {
+      return (
+        band: 'Moderate likelihood',
+        headline: 'Possible PCOS',
+        body:
+            'Some of your values point towards PCOS. This is worth discussing with a doctor, who can run the right tests to confirm.',
+        color: AppColors.symptomOrange,
+      );
+    }
+    return (
+      band: 'High likelihood',
+      headline: 'Higher likelihood of PCOS',
+      body:
+          'Several of your values point towards PCOS. Please see a doctor to confirm. Only a doctor can diagnose PCOS.',
+      color: AppColors.periodRed,
+    );
+  }
+
   Widget _resultCard(PcosResult result) {
-    final isPositive =
-        result.prediction.toLowerCase().contains('detected') &&
-        !result.prediction.toLowerCase().contains('no pcos');
-    final color = isPositive ? AppColors.periodRed : AppColors.ovulationTeal;
+    final p = result.pcosProbability.clamp(0.0, 1.0).toDouble();
+    final b = _bandFor(p);
 
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withValues(alpha: 0.5)),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: b.color.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: b.color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              b.band.toUpperCase(),
+              style: AppTextStyles.sans(
+                size: 10,
+                weight: FontWeight.w700,
+                color: b.color,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
           Text(
-            result.prediction,
+            b.headline,
             style: AppTextStyles.sans(
-              size: 15,
+              size: 16,
               weight: FontWeight.w700,
-              color: color,
+              color: b.color,
             ),
           ),
           const SizedBox(height: 6),
           Text(
-            'Estimated PCOS likelihood: ${(result.pcosProbability * 100).clamp(0, 100).toStringAsFixed(1)}%',
+            'Screening estimate: ${(p * 100).toStringAsFixed(0)}%',
             style: AppTextStyles.sans(
               size: 13,
               weight: FontWeight.w600,
               color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            'Model used: ${result.modelUsed}',
-            style: AppTextStyles.sans(size: 11, color: AppColors.textSecondary),
-          ),
           const SizedBox(height: 10),
           Text(
-            'This is a screening estimate, not a medical diagnosis. Please consult a doctor for confirmation.',
+            b.body,
+            style: AppTextStyles.sans(
+              size: 12,
+              color: AppColors.textSecondary,
+            ).copyWith(height: 1.5),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'This is a screening estimate from a model trained on a limited dataset. It is not a medical diagnosis.',
             style: AppTextStyles.sans(
               size: 11,
               color: AppColors.textSecondary,
             ).copyWith(fontStyle: FontStyle.italic, height: 1.4),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            height: 44,
+            child: OutlinedButton.icon(
+              onPressed: () => _copySummary(result, b.band),
+              icon: const Icon(Icons.copy_rounded, size: 16),
+              label: Text(
+                'Copy summary for my doctor',
+                style: AppTextStyles.sans(size: 12, weight: FontWeight.w600),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: b.color.withValues(alpha: 0.6)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  /// Called when the user taps "Run PCOS Detection". Validates the form,
-  /// then runs the prediction using the app's single deployed model.
+  String _yn(bool v) => v ? 'Yes' : 'No';
+
+  Future<void> _copySummary(PcosResult result, String band) async {
+    final p = (result.pcosProbability.clamp(0.0, 1.0) * 100).toStringAsFixed(0);
+    final notes = _notesController.text.trim();
+    final text = StringBuffer()
+      ..writeln('Wellness Saheli - PCOS screening summary')
+      ..writeln('Result: $band (screening estimate $p%). Not a diagnosis.')
+      ..writeln()
+      ..writeln(
+        'Age: ${_ageController.text} | Height: ${_heightController.text} cm | Weight: ${_weightController.text} kg',
+      )
+      ..writeln('Marital status: ${_maritalStatus ?? 'Not shared'}')
+      ..writeln('Cycle: $_cycleRegularity, ${_cycleLengthController.text} days')
+      ..writeln(
+        'PRL: ${_prlController.text} | Vit D3: ${_vitD3Controller.text} | PRG: ${_prgController.text} | RBS: ${_rbsController.text}',
+      )
+      ..writeln(
+        'BP: ${_bpSystolicController.text}/${_bpDiastolicController.text} mmHg',
+      )
+      ..writeln(
+        'Follicles L/R: ${_follicleLController.text}/${_follicleRController.text} | Avg size L/R: ${_avgFSizeLController.text}/${_avgFSizeRController.text} mm | Endometrium: ${_endometriumController.text} mm',
+      )
+      ..writeln(
+        'Weight gain: ${_yn(_weightGain)} | Hair growth: ${_yn(_hairGrowth)} | Skin darkening: ${_yn(_skinDarkening)} | Hair loss: ${_yn(_hairLoss)} | Pimples: ${_yn(_pimples)}',
+      )
+      ..writeln(
+        'Fast food: ${_yn(_fastFood)} | Regular exercise: ${_yn(_regularExercise)}',
+      );
+    if (notes.isNotEmpty) {
+      text
+        ..writeln()
+        ..writeln('Notes: $notes');
+    }
+
+    await Clipboard.setData(ClipboardData(text: text.toString()));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Summary copied. You can paste it into a message or note.',
+        ),
+      ),
+    );
+  }
+
+  /// Validates the form, then runs the prediction.
   Future<void> _onRunDetectionPressed() async {
     setState(() {
       _errorText = null;
@@ -995,9 +1331,7 @@ class _PcosScreenState extends State<PcosScreen> {
         _result = result;
       });
 
-      // Save into the diary/profile so history + future AI check-ins
-      // can reference it -- fire-and-forget, shouldn't block the result
-      // from showing.
+      // Save into the diary/profile (fire-and-forget).
       final service = HealthProfileService();
       service.appendPcosResult(
         prediction: result.prediction,
@@ -1005,8 +1339,6 @@ class _PcosScreenState extends State<PcosScreen> {
         modelUsed: result.modelUsed,
       );
 
-      // Persist the form inputs back to the profile so Demographics
-      // and ReproductiveHistory are no longer permanently "Not set".
       service.updateProfile((p) {
         final age = int.tryParse(_ageController.text.trim());
         final weight = double.tryParse(_weightController.text.trim());
@@ -1082,188 +1414,6 @@ class _PcosScreenState extends State<PcosScreen> {
           ),
         ],
       ),
-    );
-  }
-}
-
-/// Accordion-style card used for every PCOS info section. Supports plain
-/// paragraphs, bold-lead bullet lines, numbered criteria lines, and an
-/// optional row of tag chips at the bottom.
-class PcosCard extends StatefulWidget {
-  final String emoji;
-  final Color badgeColor;
-  final String title;
-  final String subtitle;
-  final List<PcosLine> lines;
-  final List<PcosTag>? tags;
-  final bool initiallyExpanded;
-
-  const PcosCard({
-    super.key,
-    required this.emoji,
-    required this.badgeColor,
-    required this.title,
-    required this.subtitle,
-    required this.lines,
-    this.tags,
-    this.initiallyExpanded = false,
-  });
-
-  @override
-  State<PcosCard> createState() => _PcosCardState();
-}
-
-class _PcosCardState extends State<PcosCard> {
-  late bool _expanded = widget.initiallyExpanded;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 0),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.cardBorder),
-      ),
-      child: Column(
-        children: [
-          GestureDetector(
-            onTap: () => setState(() => _expanded = !_expanded),
-            behavior: HitTestBehavior.opaque,
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: widget.badgeColor.withValues(alpha: 0.18),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Center(
-                      child: Text(
-                        widget.emoji,
-                        style: const TextStyle(fontSize: 18),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.title,
-                          style: AppTextStyles.sans(
-                            size: 14,
-                            weight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          widget.subtitle,
-                          style: AppTextStyles.sans(
-                            size: 11,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  AnimatedRotation(
-                    turns: _expanded ? 0.5 : 0,
-                    duration: const Duration(milliseconds: 200),
-                    child: Icon(
-                      Icons.keyboard_arrow_down,
-                      size: 20,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          AnimatedCrossFade(
-            firstChild: const SizedBox(width: double.infinity, height: 0),
-            secondChild: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  for (final line in widget.lines) _buildLine(line),
-                  if (widget.tags != null && widget.tags!.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: widget.tags!.map((t) {
-                        return Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: t.color.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: t.color.withValues(alpha: 0.4),
-                            ),
-                          ),
-                          child: Text(
-                            t.label,
-                            style: AppTextStyles.sans(
-                              size: 10,
-                              weight: FontWeight.w600,
-                              color: t.color,
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            crossFadeState: _expanded
-                ? CrossFadeState.showSecond
-                : CrossFadeState.showFirst,
-            duration: const Duration(milliseconds: 200),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLine(PcosLine line) {
-    final baseStyle = AppTextStyles.sans(
-      size: 12,
-      color: AppColors.textSecondary,
-    ).copyWith(height: 1.5);
-    final boldStyle = baseStyle.copyWith(
-      color: AppColors.textPrimary,
-      fontWeight: FontWeight.w600,
-    );
-
-    final spans = <TextSpan>[];
-    if (line.number != null) {
-      spans.add(TextSpan(text: '${line.number}. ', style: boldStyle));
-    }
-    if (line.boldLead != null) {
-      spans.add(TextSpan(text: line.boldLead, style: boldStyle));
-      spans.add(
-        TextSpan(
-          text: line.number != null ? ' — ${line.text}' : ': ${line.text}',
-          style: baseStyle,
-        ),
-      );
-    } else {
-      spans.add(TextSpan(text: line.text, style: baseStyle));
-    }
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: RichText(text: TextSpan(children: spans)),
     );
   }
 }

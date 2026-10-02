@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
-import 'pcos_screen.dart' show PcosCard, PcosLine, PcosTag;
+import '../widgets/pcos_card.dart';
 
 class EndoScreen extends StatefulWidget {
   const EndoScreen({super.key});

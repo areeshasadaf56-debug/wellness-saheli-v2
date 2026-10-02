@@ -198,14 +198,15 @@ class CycleProvider extends ChangeNotifier {
 
       await login(
         body['name'] ?? name,
-        userId: body['user_id'] as String?,
+        userId: body['user_id']?.toString(),
         token: body['token'] as String?,
         tokenExpiresAt: body['expires_at'] != null
             ? DateTime.tryParse(body['expires_at'] as String)
             : null,
       );
       return null;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('signUp error: $e');
       return 'Could not reach the server. Please check your internet connection and try again.';
     }
   }
@@ -236,14 +237,15 @@ class CycleProvider extends ChangeNotifier {
 
       await login(
         body['name'] ?? '',
-        userId: body['user_id'] as String?,
+        userId: body['user_id']?.toString(),
         token: body['token'] as String?,
         tokenExpiresAt: body['expires_at'] != null
             ? DateTime.tryParse(body['expires_at'] as String)
             : null,
       );
       return null;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('signIn error: $e');
       return 'Could not reach the server. Please check your internet connection and try again.';
     }
   }

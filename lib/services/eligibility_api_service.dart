@@ -3,15 +3,9 @@ import 'package:http/http.dart' as http;
 import '../config/api_config.dart';
 
 /// MODULE: services/eligibility_api_service.dart
-/// ROLE: Talks to the Flask backend's contraceptive-eligibility endpoints
+/// ROLE: Talks to the backend's contraceptive-eligibility endpoints
 /// (GET /conditions, GET /methods_reference, GET /effectiveness,
-/// POST /eligibility). Used by screens/protection_screen.dart to power
-/// the Eligibility tool.
-/// FIX (was a bug): this file used to define its own hardcoded
-/// `_baseUrl` constant, separate from config/api_config.dart's
-/// `ApiConfig.baseUrl`. That meant changing the backend URL in one place
-/// silently missed this file's four endpoints. Now reads from
-/// ApiConfig.baseUrl like every other service in the app.
+/// POST /eligibility). Used by screens/protection_screen.dart.
 
 /// A single selectable medical condition, as returned by GET /conditions.
 class Condition {
@@ -38,16 +32,66 @@ class MethodInfo {
 }
 
 /// The eligibility result for one method, as returned by POST /eligibility.
+///
+/// `category` is NULLABLE: the backend sends `category: null` (with
+/// `pending_review` and a `note` explaining why) when the WHO MEC matrix
+/// has no rating yet for this method + the selected condition(s). That
+/// is a normal, expected result -- not a parse error -- so it must be
+/// handled as data, not thrown away.
 class MethodResult {
   final String methodLabel;
-  final int category;
+  final int? category;
+  final bool pendingReview;
+  final String? note;
 
-  MethodResult({required this.methodLabel, required this.category});
+  MethodResult({
+    required this.methodLabel,
+    required this.category,
+    this.pendingReview = false,
+    this.note,
+  });
 
+  /// Tolerant parser: accepts a few likely key names for the label, and
+  /// reads the category whether it arrives as int, num, string ("4"),
+  /// or null (not yet assessed).
   factory MethodResult.fromJson(Map<String, dynamic> json) {
+    final label =
+        json['method_label'] ??
+        json['methodLabel'] ??
+        json['label'] ??
+        json['method'] ??
+        json['method_name'] ??
+        json['name'];
+
+    final rawCategory =
+        json['category'] ?? json['rating'] ?? json['result'] ?? json['value'];
+
+    int? category;
+    if (rawCategory == null) {
+      category = null;
+    } else if (rawCategory is int) {
+      category = rawCategory;
+    } else if (rawCategory is num) {
+      category = rawCategory.toInt();
+    } else if (rawCategory is String) {
+      final match = RegExp(r'\d+').firstMatch(rawCategory);
+      category = match != null ? int.tryParse(match.group(0)!) : null;
+    }
+
+    if (label == null) {
+      throw FormatException(
+        'Unexpected eligibility item (keys: ${json.keys.toList()}): $json',
+      );
+    }
+
+    final pendingReview = json['pending_review'] == true;
+    final note = json['note'] as String?;
+
     return MethodResult(
-      methodLabel: json['method_label'] as String,
-      category: json['category'] as int,
+      methodLabel: label.toString(),
+      category: category,
+      pendingReview: pendingReview,
+      note: note,
     );
   }
 }
@@ -121,16 +165,45 @@ class EligibilityApiService {
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'condition_ids': conditionIds}),
     );
+
     if (response.statusCode != 200) {
-      final body = jsonDecode(response.body);
-      throw Exception(
-        body['detail'] ??
-            'Could not check eligibility (${response.statusCode})',
+      String message = 'Could not check eligibility (${response.statusCode})';
+      try {
+        final body = jsonDecode(response.body);
+        if (body is Map && body['detail'] != null) {
+          message = body['detail'].toString();
+        }
+      } catch (_) {}
+      throw Exception(message);
+    }
+
+    final decoded = jsonDecode(response.body);
+
+    // Accept either a plain list or an object wrapping the list.
+    List<dynamic> data;
+    if (decoded is List) {
+      data = decoded;
+    } else if (decoded is Map) {
+      final inner =
+          decoded['results'] ??
+          decoded['methods'] ??
+          decoded['data'] ??
+          decoded['eligibility'];
+      if (inner is List) {
+        data = inner;
+      } else {
+        throw FormatException(
+          'Unexpected eligibility response: ${response.body}',
+        );
+      }
+    } else {
+      throw FormatException(
+        'Unexpected eligibility response: ${response.body}',
       );
     }
-    final List<dynamic> data = jsonDecode(response.body);
+
     return data
-        .map((e) => MethodResult.fromJson(e as Map<String, dynamic>))
+        .map((e) => MethodResult.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList();
   }
 }

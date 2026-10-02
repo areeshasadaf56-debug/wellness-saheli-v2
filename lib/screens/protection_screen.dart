@@ -840,19 +840,22 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
     });
     try {
       final results = await _api.checkEligibility(validIds);
+      if (!mounted) return;
       setState(() {
         _eligibilityResults = results;
         // A fresh check produced new results -- clear the "saved" state
         // from any previous check so the save button is live again.
         _eligibilitySaved = false;
       });
-    } catch (e) {
+    } catch (e, st) {
+      debugPrint('eligibility error: $e\n$st');
+      if (!mounted) return;
       setState(() {
         _eligibilityError =
-            'Could not check eligibility right now. Please try again in a moment.';
+            'Could not check eligibility right now. Please try again in a moment.\n\nDetails: $e';
       });
     } finally {
-      setState(() => _checkingEligibility = false);
+      if (mounted) setState(() => _checkingEligibility = false);
     }
   }
 
@@ -878,11 +881,15 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
     try {
       await HealthProfileService().appendEligibilityCheck(
         conditions: _selectedConditionLabels(),
+        // Only save methods that actually received a rating -- a
+        // "not yet assessed" (null category) result has nothing
+        // meaningful to record in the diary.
         results: _eligibilityResults!
+            .where((r) => r.category != null)
             .map(
               (r) => EligibilityResultEntry(
                 methodLabel: r.methodLabel,
-                category: r.category,
+                category: r.category!,
               ),
             )
             .toList(),
@@ -953,7 +960,7 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
     }
   }
 
-  Color _categoryColor(int category) {
+  Color _categoryColor(int? category) {
     switch (category) {
       case 1:
         return AppColors.ovulationTeal;
@@ -964,11 +971,14 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
       case 4:
         return AppColors.periodRed;
       default:
+        // null (or anything unrecognized) means "not yet assessed" --
+        // the server sends this when the WHO MEC matrix has no rating
+        // for this method + condition combination.
         return AppColors.textSecondary;
     }
   }
 
-  String _categoryShortLabel(int category) {
+  String _categoryShortLabel(int? category) {
     switch (category) {
       case 1:
         return 'Safe to use';
@@ -979,7 +989,7 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
       case 4:
         return 'Not recommended';
       default:
-        return '';
+        return 'Not yet assessed';
     }
   }
 
@@ -2315,43 +2325,64 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.cardBorder),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.18),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Center(
-              child: Text(
-                '${r.category}',
-                style: AppTextStyles.sans(
-                  size: 16,
-                  weight: FontWeight.w700,
-                  color: color,
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.18),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Center(
+                  child: Text(
+                    r.category?.toString() ?? '–',
+                    style: AppTextStyles.sans(
+                      size: 16,
+                      weight: FontWeight.w700,
+                      color: color,
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  r.methodLabel,
-                  style: AppTextStyles.sans(size: 14, weight: FontWeight.w600),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      r.methodLabel,
+                      style: AppTextStyles.sans(
+                        size: 14,
+                        weight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _categoryShortLabel(r.category),
+                      style: AppTextStyles.sans(size: 11, color: color),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  _categoryShortLabel(r.category),
-                  style: AppTextStyles.sans(size: 11, color: color),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
+          // The server sends a note explaining why a method has no
+          // rating yet (category == null) -- surface it so it doesn't
+          // look like a silent failure.
+          if (r.category == null && r.note != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              r.note!,
+              style: AppTextStyles.sans(
+                size: 11.5,
+                color: AppColors.textSecondary,
+              ).copyWith(height: 1.4, fontStyle: FontStyle.italic),
+            ),
+          ],
         ],
       ),
     );
