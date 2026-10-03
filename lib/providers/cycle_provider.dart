@@ -1,11 +1,9 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/cycle_data.dart';
 import '../models/daily_log.dart';
-import '../services/secure_store.dart';
 
 class CycleProvider extends ChangeNotifier {
   CycleData _cycleData = CycleData(
@@ -112,9 +110,9 @@ class CycleProvider extends ChangeNotifier {
     // Restore auth/profile state so a returning user skips sign-in.
     _isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
     _userName = prefs.getString('userName') ?? '';
-    _userId = await SecureStore.read(SecureStore.userIdKey);
-    _authToken = await SecureStore.read(SecureStore.tokenKey);
-    final expiresMillis = await SecureStore.readExpiryMillis();
+    _userId = prefs.getString('authUserId');
+    _authToken = prefs.getString('authToken');
+    final expiresMillis = prefs.getInt('authTokenExpiresAt');
     _tokenExpiresAt = expiresMillis != null
         ? DateTime.fromMillisecondsSinceEpoch(expiresMillis)
         : null;
@@ -126,7 +124,14 @@ class CycleProvider extends ChangeNotifier {
       _authToken = null;
       _userId = null;
       _tokenExpiresAt = null;
-      await SecureStore.clearSession();
+    }
+
+    // No usable token means the AI Check-in (and any other authenticated
+    // endpoint) will reject every request. Treat the user as signed out so
+    // the splash screen sends them to Sign In once to get a fresh token,
+    // instead of letting them in with a "logged in" flag but no session.
+    if (_authToken == null) {
+      _isLoggedIn = false;
     }
 
     _isLoaded = true;
@@ -160,12 +165,12 @@ class CycleProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('isLoggedIn', true);
     await prefs.setString('userName', name);
-    if (userId != null) await SecureStore.write(SecureStore.userIdKey, userId);
-    if (token != null) await SecureStore.write(SecureStore.tokenKey, token);
+    if (userId != null) await prefs.setString('authUserId', userId);
+    if (token != null) await prefs.setString('authToken', token);
     if (tokenExpiresAt != null) {
-      await SecureStore.write(
-        SecureStore.expiresKey,
-        tokenExpiresAt.millisecondsSinceEpoch.toString(),
+      await prefs.setInt(
+        'authTokenExpiresAt',
+        tokenExpiresAt.millisecondsSinceEpoch,
       );
     }
   }
@@ -209,7 +214,7 @@ class CycleProvider extends ChangeNotifier {
       );
       return null;
     } catch (e) {
-      if (kDebugMode) debugPrint('signUp error: $e');
+      debugPrint('signUp error: $e');
       return 'Could not reach the server. Please check your internet connection and try again.';
     }
   }
@@ -248,7 +253,7 @@ class CycleProvider extends ChangeNotifier {
       );
       return null;
     } catch (e) {
-      if (kDebugMode) debugPrint('signIn error: $e');
+      debugPrint('signIn error: $e');
       return 'Could not reach the server. Please check your internet connection and try again.';
     }
   }
@@ -297,7 +302,9 @@ class CycleProvider extends ChangeNotifier {
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('isLoggedIn', false);
-    await SecureStore.clearSession();
+    await prefs.remove('authUserId');
+    await prefs.remove('authToken');
+    await prefs.remove('authTokenExpiresAt');
 
     if (tokenToInvalidate != null) {
       try {

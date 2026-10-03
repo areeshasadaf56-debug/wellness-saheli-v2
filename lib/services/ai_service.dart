@@ -1,9 +1,10 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../config/api_config.dart';
 import '../models/ai_response.dart';
 import '../models/health_profile.dart';
-import 'secure_store.dart';
 
 /// Thrown when there's no valid session to attach to a /chat request
 /// (not signed in, or the session expired/was revoked server-side).
@@ -18,6 +19,18 @@ class AuthRequiredException implements Exception {
 
   @override
   String toString() => message;
+}
+
+/// A failed /chat request with a message that is safe to show the user.
+/// Replaces the one-size-fits-all "couldn't reach the assistant" text so
+/// rate limits, oversized messages, timeouts and server faults are told apart.
+class ChatException implements Exception {
+  final int? statusCode;
+  final String userMessage;
+  const ChatException(this.userMessage, {this.statusCode});
+
+  @override
+  String toString() => 'ChatException($statusCode): $userMessage';
 }
 
 /// A file/image the user attached to a chat message, sent to the
@@ -55,8 +68,9 @@ class AiService {
     String language = 'en',
     ChatAttachment? attachment,
   }) async {
-    final token = await SecureStore.read(SecureStore.tokenKey);
-    if (token == null || token.isEmpty) {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('authToken');
+    if (token == null) {
       throw const AuthRequiredException();
     }
 
@@ -71,16 +85,21 @@ class AiService {
           body: jsonEncode({
             'message': message,
             'language': language,
-            'history': history
-                .map((e) => {'role': e.role, 'message': e.message})
-                .toList(),
+            // Server only uses the recent turns; sending the whole chat
+            // made long conversations fail validation.
+            'history': _recentHistory(history),
             // ignore: use_null_aware_elements
             if (profileContext != null) 'profile_context': profileContext,
             // ignore: use_null_aware_elements
             if (attachment != null) 'attachment': attachment.toJson(),
           }),
         )
-        .timeout(const Duration(seconds: 30));
+        .timeout(
+          const Duration(seconds: 45),
+          onTimeout: () => throw const ChatException(
+            'The assistant is taking longer than usual. Please try again.',
+          ),
+        );
 
     if (response.statusCode == 401) {
       throw const AuthRequiredException(
@@ -89,13 +108,50 @@ class AiService {
     }
 
     if (response.statusCode != 200) {
-      throw Exception(
-        'Chat request failed (${response.statusCode}): ${response.body}',
+      throw ChatException(
+        _messageForStatus(response.statusCode),
+        statusCode: response.statusCode,
       );
     }
 
     return AiResponse.fromJson(
       jsonDecode(response.body) as Map<String, dynamic>,
     );
+  }
+
+  static const int _maxHistoryTurns = 10;
+  static const int _maxEntryChars = 4000;
+
+  List<Map<String, String>> _recentHistory(List<ConversationEntry> history) {
+    final recent = history.length > _maxHistoryTurns
+        ? history.sublist(history.length - _maxHistoryTurns)
+        : history;
+    return recent
+        .where((e) => e.message.trim().isNotEmpty)
+        .map(
+          (e) => {
+            'role': e.role,
+            'message': e.message.length > _maxEntryChars
+                ? e.message.substring(0, _maxEntryChars)
+                : e.message,
+          },
+        )
+        .toList();
+  }
+
+  String _messageForStatus(int code) {
+    switch (code) {
+      case 413:
+      case 422:
+        return 'That message couldn\'t be processed. Try a shorter one.';
+      case 429:
+        return 'You\'re sending messages quickly. Please wait a minute and try again.';
+      case 502:
+      case 503:
+      case 504:
+        return 'The assistant is temporarily unavailable. Please try again shortly.';
+      default:
+        return 'Something went wrong on our side (error $code). Please try again.';
+    }
   }
 }

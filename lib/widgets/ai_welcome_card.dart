@@ -88,14 +88,7 @@ class AiWelcomeCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              AppColors.primary.withValues(alpha: 0.85),
-              AppColors.accent.withValues(alpha: 0.7),
-            ],
-          ),
+          gradient: AppColors.heroGradient,
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(

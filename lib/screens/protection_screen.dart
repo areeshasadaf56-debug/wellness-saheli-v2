@@ -509,8 +509,50 @@ const List<EcMethod> _ecMethods = [
       EcConditionRow('Rape', '1'),
     ],
   ),
-  EcMethod(abbreviation: 'LNG', fullName: 'Levonorgestrel'),
-  EcMethod(abbreviation: 'UPA', fullName: 'Ulipristal acetate'),
+  EcMethod(
+    abbreviation: 'LNG',
+    fullName: 'Levonorgestrel',
+    rows: [
+      EcConditionRow('Pregnancy', 'NA'),
+      EcConditionRow('Breastfeeding', '1'),
+      EcConditionRow('Past ectopic pregnancy', '1'),
+      EcConditionRow('Obesity* (BMI ≥30 kg/m2)', '1'),
+      EcConditionRow(
+        'History of severe cardiovascular disease (ischaemic heart disease, cerebrovascular attack, or other thromboembolic conditions)',
+        '2',
+      ),
+      EcConditionRow('Migraine', '2'),
+      EcConditionRow('Severe liver disease (including jaundice)', '2'),
+      EcConditionRow(
+        'CYP3A4 inducers (e.g. rifampicin, phenytoin, phenobarbital, carbamazepine, efavirenz, fosphenytoin, nevirapine, oxcarbazepine, primidone, rifabutin, St John\'s wort/ hypericum perforatum)',
+        '1',
+      ),
+      EcConditionRow('Repeated emergency contraceptive pill use', '1'),
+      EcConditionRow('Rape', '1'),
+    ],
+  ),
+  EcMethod(
+    abbreviation: 'UPA',
+    fullName: 'Ulipristal acetate',
+    rows: [
+      EcConditionRow('Pregnancy', 'NA'),
+      EcConditionRow('Breastfeeding', '2'),
+      EcConditionRow('Past ectopic pregnancy', '1'),
+      EcConditionRow('Obesity* (BMI ≥30 kg/m2)', '1'),
+      EcConditionRow(
+        'History of severe cardiovascular disease (ischaemic heart disease, cerebrovascular attack, or other thromboembolic conditions)',
+        '2',
+      ),
+      EcConditionRow('Migraine', '2'),
+      EcConditionRow('Severe liver disease (including jaundice)', '2'),
+      EcConditionRow(
+        'CYP3A4 inducers (e.g. rifampicin, phenytoin, phenobarbital, carbamazepine, efavirenz, fosphenytoin, nevirapine, oxcarbazepine, primidone, rifabutin, St John\'s wort/ hypericum perforatum)',
+        '1',
+      ),
+      EcConditionRow('Repeated emergency contraceptive pill use', '1'),
+      EcConditionRow('Rape', '1'),
+    ],
+  ),
   EcMethod(
     abbreviation: 'Cu-IUD',
     fullName: 'Copper intrauterine device',
@@ -766,7 +808,7 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
       'id': 'client_controlled',
       'label': 'Client controlled',
       'icon': Icons.pan_tool_outlined,
-      'color': AppColors.ovulationTeal,
+      'color': const Color(0xFF8A9A5B),
       'description':
           'Methods you can start or stop yourself, without needing a provider visit for insertion or removal.',
       'methods': [
@@ -779,7 +821,7 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
       'id': 'long_lasting',
       'label': 'Long lasting',
       'icon': Icons.calendar_month_outlined,
-      'color': AppColors.symptomOrange,
+      'color': const Color(0xFFB08968),
       'description':
           'Methods that protect for months or years at a time, with nothing to remember day-to-day.',
       'methods': [
@@ -974,7 +1016,7 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
         // null (or anything unrecognized) means "not yet assessed" --
         // the server sends this when the WHO MEC matrix has no rating
         // for this method + condition combination.
-        return AppColors.textSecondary;
+        return AppColors.primary;
     }
   }
 
@@ -989,7 +1031,7 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
       case 4:
         return 'Not recommended';
       default:
-        return 'Not yet assessed';
+        return 'Check with your clinician';
     }
   }
 
@@ -1048,7 +1090,7 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
     },
     {
       'emoji': '⚓',
-      'badgeColor': AppColors.textSecondary,
+      'badgeColor': AppColors.primaryLight,
       'name': 'Levonorgestrel IUD',
       'effectiveness': '>99% effective',
       'detail':
@@ -1061,7 +1103,7 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
     },
     {
       'emoji': '🔵',
-      'badgeColor': AppColors.textSecondary,
+      'badgeColor': AppColors.primaryLight,
       'name': 'Copper intrauterine device',
       'effectiveness': '>99% effective',
       'detail':
@@ -1113,7 +1155,7 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
     },
     {
       'emoji': '🔧',
-      'badgeColor': AppColors.textSecondary,
+      'badgeColor': AppColors.primaryLight,
       'name': 'Male sterilization (vasectomy)',
       'effectiveness': '>99% effective',
       'detail':
@@ -1163,7 +1205,7 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
     },
     {
       'emoji': '🔵',
-      'badgeColor': AppColors.textSecondary,
+      'badgeColor': AppColors.primaryLight,
       'name': 'IUCD',
       'effectiveness': '>99% effective',
       'detail':
@@ -2229,27 +2271,6 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
                             ).copyWith(height: 1.35),
                           ),
                         ),
-                        if (!isSupported) ...[
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.textSecondary.withOpacity(0.12),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              'Coming soon',
-                              style: AppTextStyles.sans(
-                                size: 9,
-                                weight: FontWeight.w600,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ),
-                        ],
                       ],
                     ),
                   ),
@@ -2280,24 +2301,6 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
         child: Row(
           children: [
             Flexible(child: Text(c.label, style: AppTextStyles.sans(size: 13))),
-            if (!isSupported) ...[
-              const SizedBox(width: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppColors.textSecondary.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  'Coming soon',
-                  style: AppTextStyles.sans(
-                    size: 9,
-                    weight: FontWeight.w600,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ),
-            ],
           ],
         ),
       ),
@@ -2323,7 +2326,11 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.cardBorder),
+        border: Border.all(
+          color: r.category == null
+              ? AppColors.primaryLight.withOpacity(0.45)
+              : AppColors.cardBorder,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2338,14 +2345,20 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Center(
-                  child: Text(
-                    r.category?.toString() ?? '–',
-                    style: AppTextStyles.sans(
-                      size: 16,
-                      weight: FontWeight.w700,
-                      color: color,
-                    ),
-                  ),
+                  child: r.category == null
+                      ? Icon(
+                          Icons.medical_services_outlined,
+                          size: 20,
+                          color: color,
+                        )
+                      : Text(
+                          r.category.toString(),
+                          style: AppTextStyles.sans(
+                            size: 16,
+                            weight: FontWeight.w700,
+                            color: color,
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -2380,7 +2393,7 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
               style: AppTextStyles.sans(
                 size: 11.5,
                 color: AppColors.textSecondary,
-              ).copyWith(height: 1.4, fontStyle: FontStyle.italic),
+              ).copyWith(height: 1.4),
             ),
           ],
         ],

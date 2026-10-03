@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -75,8 +77,180 @@ class _AiCheckinScreenState extends State<AiCheckinScreen> {
   final FocusNode _inputFocusNode = FocusNode();
 
   static const _openingGreeting =
-      "Hi -- I'm here to check in on how you've really been. Take your "
-      "time, there's no rush. How have you been feeling lately, overall?";
+      "Hi there 🌸 I'm Saheli -- I'm here to check in on how you've "
+      "really been. Take your time, there's no rush 💜\n\nHow have you "
+      "been feeling lately, overall?";
+
+  // Tap-to-reply mood chips shown under the opening greeting.
+  static const List<List<String>> _moodChips = [
+    ['😊', 'Good', "I'm feeling good lately"],
+    ['😌', 'Okay', "I'm doing okay, nothing special"],
+    ['😔', 'Low', "I've been feeling low lately"],
+    ['😰', 'Anxious', "I've been feeling anxious and stressed"],
+    ['😴', 'Tired', "I've been feeling really tired"],
+    ['🤒', 'Unwell', "I haven't been feeling well physically"],
+  ];
+
+  void _sendQuickReply(String text) {
+    if (_sending) return;
+    _inputController.text = text;
+    _sendMessage();
+  }
+
+  String _formatTime(DateTime t) {
+    final h = t.hour % 12 == 0 ? 12 : t.hour % 12;
+    final m = t.minute.toString().padLeft(2, '0');
+    return '$h:$m ${t.hour >= 12 ? 'PM' : 'AM'}';
+  }
+
+  // --- Pet buddy 🐾 ---------------------------------------------------
+  static const List<String> _pets = ['🐱', '🐰', '🐶', '🐼', '🦊', '🐻'];
+  static const String _petKey = 'ai_checkin_pet';
+  static const List<String> _petPhrases = [
+    'purr~ 💕',
+    'hehe that tickles! 🥰',
+    "you're doing great 🌷",
+    "I'm proud of you ✨",
+    'sending you a hug 🤗',
+    'psst… hold me to change my look 🎀',
+    "I'm always here for you 💜",
+  ];
+
+  String _petEmoji = '🐱';
+  _PetMood _petMood = _PetMood.idle;
+  int _petBurst = 0;
+  String? _petSpeech;
+  Timer? _happyTimer;
+  Timer? _speechTimer;
+  Timer? _sleepTimer;
+
+  Future<void> _loadPetPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getString(_petKey);
+    if (saved != null && _pets.contains(saved) && mounted) {
+      setState(() => _petEmoji = saved);
+    }
+  }
+
+  /// Wakes the pet up and restarts the "fall asleep after a while" timer.
+  void _bumpActivity() {
+    _sleepTimer?.cancel();
+    if (_petMood == _PetMood.sleepy && mounted) {
+      setState(() => _petMood = _PetMood.idle);
+    }
+    _sleepTimer = Timer(const Duration(seconds: 45), () {
+      if (mounted && !_sending) setState(() => _petMood = _PetMood.sleepy);
+    });
+  }
+
+  void _say(String text, {int ms = 2800}) {
+    if (!mounted) return;
+    setState(() => _petSpeech = text);
+    _speechTimer?.cancel();
+    _speechTimer = Timer(Duration(milliseconds: ms), () {
+      if (mounted) setState(() => _petSpeech = null);
+    });
+  }
+
+  void _celebrate() {
+    if (!mounted) return;
+    setState(() {
+      _petMood = _PetMood.happy;
+      _petBurst++;
+    });
+    _say('yay~ 💕', ms: 2200);
+    _happyTimer?.cancel();
+    _happyTimer = Timer(const Duration(milliseconds: 2600), () {
+      if (mounted && _petMood == _PetMood.happy) {
+        setState(() => _petMood = _PetMood.idle);
+      }
+    });
+  }
+
+  void _onPetTap() {
+    HapticFeedback.lightImpact();
+    _bumpActivity();
+    setState(() => _petBurst++);
+    _say(_petPhrases[math.Random().nextInt(_petPhrases.length)]);
+  }
+
+  Future<void> _onPetLongPress() async {
+    HapticFeedback.mediumImpact();
+    final next = _pets[(_pets.indexOf(_petEmoji) + 1) % _pets.length];
+    setState(() {
+      _petEmoji = next;
+      _petBurst++;
+    });
+    _say('hi, I\'m your new buddy! ✨');
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_petKey, next);
+  }
+
+  Widget _petRow() {
+    final mood = _sending ? _PetMood.thinking : _petMood;
+    final speech =
+        _petSpeech ??
+        (_sending
+            ? 'thinking… 💭'
+            : (mood == _PetMood.sleepy ? 'zzz… 💤' : null));
+    return Padding(
+      padding: const EdgeInsets.only(right: 14),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 250),
+            transitionBuilder: (child, anim) => ScaleTransition(
+              scale: anim,
+              alignment: Alignment.bottomRight,
+              child: FadeTransition(opacity: anim, child: child),
+            ),
+            child: speech == null
+                ? const SizedBox.shrink(key: ValueKey('no-speech'))
+                : Container(
+                    key: ValueKey(speech),
+                    margin: const EdgeInsets.only(bottom: 24),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 7,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.25),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.08),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      speech,
+                      style: AppTextStyles.sans(
+                        size: 11.5,
+                        weight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+          ),
+          const SizedBox(width: 4),
+          _PetMascot(
+            emoji: _petEmoji,
+            mood: mood,
+            burst: _petBurst,
+            onTap: _onPetTap,
+            onLongPress: _onPetLongPress,
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -84,6 +258,10 @@ class _AiCheckinScreenState extends State<AiCheckinScreen> {
     _loadInitialState();
     _loadLanguagePreference();
     _initSpeech();
+    _loadPetPreference();
+    _inputController.addListener(_bumpActivity);
+    _bumpActivity();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _say('hi hi! 🐾'));
   }
 
   @override
@@ -91,6 +269,9 @@ class _AiCheckinScreenState extends State<AiCheckinScreen> {
     _inputController.dispose();
     _scrollController.dispose();
     _inputFocusNode.dispose();
+    _happyTimer?.cancel();
+    _speechTimer?.cancel();
+    _sleepTimer?.cancel();
     if (_listening) _speech.stop();
     super.dispose();
   }
@@ -153,7 +334,6 @@ class _AiCheckinScreenState extends State<AiCheckinScreen> {
     });
 
     await _speech.listen(
-      // ignore: deprecated_member_use
       localeId: _language == 'ur' ? 'ur_PK' : 'en_US',
       onResult: (result) {
         setState(() {
@@ -450,13 +630,8 @@ class _AiCheckinScreenState extends State<AiCheckinScreen> {
       _pendingAttachment = null;
     });
 
-    // The server accepts at most 10 history entries, so send only the most
-    // recent ones. Sending the whole conversation made every message fail
-    // once a chat grew past 10 messages.
     final historyForRequest = _profile!.privacySettings.aiMemoryEnabled
-        ? (_messages.length > 10
-              ? _messages.sublist(_messages.length - 10)
-              : List<ConversationEntry>.from(_messages))
+        ? List<ConversationEntry>.from(_messages)
         : <ConversationEntry>[];
 
     final profileContext = _buildProfileContext();
@@ -525,6 +700,10 @@ class _AiCheckinScreenState extends State<AiCheckinScreen> {
         if (result.medicalEmergencyConcern) _showMedicalEmergencyBanner = true;
         _sending = false;
       });
+      // Keep the pet calm (no confetti) when a safety banner is showing.
+      if (!result.crisisConcern && !result.medicalEmergencyConcern) {
+        _celebrate();
+      }
       _scrollToBottom();
     } catch (e) {
       if (!mounted) return;
@@ -532,8 +711,11 @@ class _AiCheckinScreenState extends State<AiCheckinScreen> {
         _sending = false;
         _errorText = e is AuthRequiredException
             ? e.message
-            : "Couldn't reach the check-in assistant. Please try again.";
+            : e is ChatException
+            ? e.userMessage
+            : "Couldn't reach the check-in assistant. Check your connection and try again.";
       });
+      _say('oops… try again 🥺');
     }
   }
 
@@ -650,39 +832,152 @@ class _AiCheckinScreenState extends State<AiCheckinScreen> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    return SafeArea(
-      child: Column(
-        children: [
-          _topBar(),
-          if (_showMedicalEmergencyBanner) _medicalEmergencyBanner(),
-          if (_showCrisisBanner) _crisisBanner(),
-          Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              itemCount:
-                  _messages.length + (_pendingSuggestedTab != null ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (index < _messages.length) {
-                  return _messageBubble(_messages[index]);
-                }
-                return _suggestionCard(
-                  _pendingSuggestedTab!,
-                  _pendingSuggestedReason,
-                );
-              },
-            ),
-          ),
-          if (_errorText != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              child: Text(
-                _errorText!,
-                style: AppTextStyles.sans(size: 12, color: AppColors.periodRed),
+    final showChips = _messages.length == 1 && !_sending;
+
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFFF8F1FD), Color(0xFFF4ECFA), Color(0xFFFCEFF6)],
+        ),
+      ),
+      child: SafeArea(
+        child: Column(
+          children: [
+            _topBar(),
+            if (_showMedicalEmergencyBanner) _medicalEmergencyBanner(),
+            if (_showCrisisBanner) _crisisBanner(),
+            Expanded(
+              child: Stack(
+                children: [
+                  const Positioned.fill(
+                    child: IgnorePointer(child: _FloatingDecor()),
+                  ),
+                  ListView(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 14,
+                    ),
+                    children: [
+                      for (final m in _messages) _messageBubble(m),
+                      if (showChips) _quickReplies(),
+                      if (_sending) _typingBubble(),
+                      if (_pendingSuggestedTab != null)
+                        _suggestionCard(
+                          _pendingSuggestedTab!,
+                          _pendingSuggestedReason,
+                        ),
+                    ],
+                  ),
+                ],
               ),
             ),
-          if (_pendingAttachment != null) _attachmentChip(),
-          _inputBar(),
+            if (_errorText != null)
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.fromLTRB(14, 0, 14, 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.periodRed.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppColors.periodRed.withValues(alpha: 0.25),
+                  ),
+                ),
+                child: Text(
+                  '😕  $_errorText',
+                  style: AppTextStyles.sans(
+                    size: 12,
+                    color: AppColors.periodRed,
+                  ),
+                ),
+              ),
+            if (_pendingAttachment != null) _attachmentChip(),
+            _petRow(),
+            _inputBar(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _saheliAvatar({double size = 30}) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFF3D9EC), Color(0xFFDCC8F2)],
+        ),
+      ),
+      child: Center(
+        child: Text('🌸', style: TextStyle(fontSize: size * 0.5)),
+      ),
+    );
+  }
+
+  Widget _quickReplies() {
+    return Padding(
+      padding: const EdgeInsets.only(left: 38, bottom: 14, top: 2),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          for (final chip in _moodChips)
+            ActionChip(
+              onPressed: () => _sendQuickReply(chip[2]),
+              backgroundColor: AppColors.surface,
+              side: BorderSide(
+                color: AppColors.primary.withValues(alpha: 0.35),
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              label: Text(
+                '${chip[0]}  ${chip[1]}',
+                style: AppTextStyles.sans(
+                  size: 12.5,
+                  weight: FontWeight.w600,
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _typingBubble() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          _saheliAvatar(size: 28),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(18),
+                topRight: Radius.circular(18),
+                bottomRight: Radius.circular(18),
+                bottomLeft: Radius.circular(4),
+              ),
+              border: Border.all(color: AppColors.cardBorder),
+            ),
+            child: const _TypingDots(),
+          ),
         ],
       ),
     );
@@ -690,28 +985,60 @@ class _AiCheckinScreenState extends State<AiCheckinScreen> {
 
   Widget _topBar() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
+        color: AppColors.surface.withValues(alpha: 0.85),
         border: Border(bottom: BorderSide(color: AppColors.cardBorder)),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Row(
         children: [
-          Container(
-            width: 30,
-            height: 30,
-            decoration: BoxDecoration(
-              color: AppColors.accent.withValues(alpha: 0.15),
-              shape: BoxShape.circle,
-            ),
-            child: const Center(
-              child: Text('✨', style: TextStyle(fontSize: 15)),
-            ),
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              _saheliAvatar(size: 38),
+              Positioned(
+                right: -1,
+                bottom: -1,
+                child: Container(
+                  width: 11,
+                  height: 11,
+                  decoration: BoxDecoration(
+                    color: AppColors.ovulationTeal,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.surface, width: 2),
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
-              'Saheli',
-              style: AppTextStyles.sans(size: 15, weight: FontWeight.w700),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Saheli 💜',
+                  style: AppTextStyles.sans(size: 15, weight: FontWeight.w700),
+                ),
+                Text(
+                  _sending
+                      ? 'typing…'
+                      : (_language == 'ur'
+                            ? 'آپ کی ساتھی'
+                            : 'Your caring check-in buddy'),
+                  style: AppTextStyles.sans(
+                    size: 11,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
             ),
           ),
           GestureDetector(
@@ -748,12 +1075,14 @@ class _AiCheckinScreenState extends State<AiCheckinScreen> {
             icon: const Icon(Icons.history_rounded),
             color: AppColors.textSecondary,
             iconSize: 20,
+            tooltip: 'Chat history',
           ),
           IconButton(
             onPressed: _startNewChat,
             icon: const Icon(Icons.add_comment_outlined),
             color: AppColors.textSecondary,
             iconSize: 20,
+            tooltip: 'New chat',
           ),
         ],
       ),
@@ -853,32 +1182,91 @@ class _AiCheckinScreenState extends State<AiCheckinScreen> {
 
   Widget _messageBubble(ConversationEntry entry) {
     final isUser = entry.role == 'user';
-    return Align(
-      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.78,
+    final maxW = MediaQuery.of(context).size.width * 0.74;
+
+    final bubble = Container(
+      constraints: BoxConstraints(maxWidth: maxW),
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
+      decoration: BoxDecoration(
+        gradient: isUser
+            ? const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF9A6FCB), Color(0xFF8B5FBF)],
+              )
+            : null,
+        color: isUser ? null : AppColors.surface,
+        borderRadius: BorderRadius.only(
+          topLeft: const Radius.circular(18),
+          topRight: const Radius.circular(18),
+          bottomLeft: Radius.circular(isUser ? 18 : 4),
+          bottomRight: Radius.circular(isUser ? 4 : 18),
         ),
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: isUser ? AppColors.primary : AppColors.surface,
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(14),
-            topRight: const Radius.circular(14),
-            bottomLeft: Radius.circular(isUser ? 14 : 4),
-            bottomRight: Radius.circular(isUser ? 4 : 14),
+        border: isUser ? null : Border.all(color: AppColors.cardBorder),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: isUser ? 0.18 : 0.07),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
-          border: isUser ? null : Border.all(color: AppColors.cardBorder),
-        ),
-        child: Text(
-          entry.message,
-          style: AppTextStyles.sans(
-            size: 13.5,
-            color: isUser ? Colors.white : AppColors.textPrimary,
-          ).copyWith(height: 1.45),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              entry.message,
+              style: AppTextStyles.sans(
+                size: 14,
+                color: isUser ? Colors.white : AppColors.textPrimary,
+              ).copyWith(height: 1.5),
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            _formatTime(entry.timestamp),
+            style: AppTextStyles.sans(
+              size: 9.5,
+              color: isUser
+                  ? Colors.white.withValues(alpha: 0.7)
+                  : AppColors.textSecondary.withValues(alpha: 0.7),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    final row = Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        mainAxisAlignment: isUser
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: isUser
+            ? [bubble]
+            : [_saheliAvatar(size: 28), const SizedBox(width: 8), bubble],
+      ),
+    );
+
+    // Cute "pop" entrance for every new message.
+    return TweenAnimationBuilder<double>(
+      key: ValueKey(entry.timestamp.microsecondsSinceEpoch),
+      tween: Tween<double>(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 420),
+      curve: Curves.easeOutBack,
+      builder: (context, v, child) => Opacity(
+        opacity: v.clamp(0.0, 1.0),
+        child: Transform.scale(
+          scale: 0.85 + 0.15 * v,
+          alignment: isUser ? Alignment.bottomRight : Alignment.bottomLeft,
+          child: child,
         ),
       ),
+      child: row,
     );
   }
 
@@ -889,11 +1277,11 @@ class _AiCheckinScreenState extends State<AiCheckinScreen> {
     final color = tab == 'pcos' ? AppColors.periodRed : AppColors.ovulationTeal;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
+      margin: const EdgeInsets.only(bottom: 14, left: 38),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
       child: Column(
@@ -901,10 +1289,13 @@ class _AiCheckinScreenState extends State<AiCheckinScreen> {
         children: [
           Row(
             children: [
-              Icon(Icons.explore_outlined, size: 16, color: color),
+              Text(
+                tab == 'pcos' ? '🔍' : '🛡️',
+                style: const TextStyle(fontSize: 15),
+              ),
               const SizedBox(width: 6),
               Text(
-                'Worth a look: $label',
+                'Might be worth a look: $label',
                 style: AppTextStyles.sans(
                   size: 12.5,
                   weight: FontWeight.w700,
@@ -947,7 +1338,7 @@ class _AiCheckinScreenState extends State<AiCheckinScreen> {
                 ),
               ),
               child: Text(
-                'Take me there',
+                'Take me there ✨',
                 style: AppTextStyles.sans(size: 12.5, weight: FontWeight.w600),
               ),
             ),
@@ -1014,7 +1405,7 @@ class _AiCheckinScreenState extends State<AiCheckinScreen> {
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.surface.withValues(alpha: 0.9),
         border: Border(top: BorderSide(color: AppColors.cardBorder)),
       ),
       child: Container(
@@ -1058,7 +1449,7 @@ class _AiCheckinScreenState extends State<AiCheckinScreen> {
                         ? 'Listening…'
                         : (_language == 'ur'
                               ? 'سہیلی کو پیغام بھیجیں…'
-                              : 'Message Saheli…'),
+                              : 'Tell Saheli how you feel… 💬'),
                     hintStyle: AppTextStyles.sans(
                       size: 13,
                       color: AppColors.textSecondary,
@@ -1097,6 +1488,8 @@ class _AiCheckinScreenState extends State<AiCheckinScreen> {
                     iconSize: 18,
                     style: IconButton.styleFrom(
                       backgroundColor: AppColors.primary,
+                      elevation: 2,
+                      shadowColor: AppColors.primary,
                       shape: const CircleBorder(),
                       padding: const EdgeInsets.all(8),
                     ),
@@ -1104,6 +1497,295 @@ class _AiCheckinScreenState extends State<AiCheckinScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Three softly bouncing dots shown while Saheli is "typing".
+class _TypingDots extends StatefulWidget {
+  const _TypingDots();
+
+  @override
+  State<_TypingDots> createState() => _TypingDotsState();
+}
+
+class _TypingDotsState extends State<_TypingDots>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1100),
+  )..repeat();
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (context, _) {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: List.generate(3, (i) {
+            final t = ((_c.value - i * 0.18) % 1.0).clamp(0.0, 1.0);
+            final lift = t < 0.5 ? t * 2 : (1 - t) * 2; // 0..1..0
+            return Container(
+              margin: const EdgeInsets.symmetric(horizontal: 2.5),
+              transform: Matrix4.translationValues(0, -4 * lift, 0),
+              width: 7,
+              height: 7,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.primary.withValues(alpha: 0.35 + 0.5 * lift),
+              ),
+            );
+          }),
+        );
+      },
+    );
+  }
+}
+
+enum _PetMood { idle, thinking, happy, sleepy }
+
+/// A tiny emoji pet that lives above the input bar. It breathes when idle,
+/// wobbles while Saheli is thinking, bounces when happy, naps when you've
+/// been quiet, and throws out hearts when you tap it.
+class _PetMascot extends StatefulWidget {
+  final String emoji;
+  final _PetMood mood;
+  final int burst;
+  final VoidCallback onTap;
+  final VoidCallback onLongPress;
+
+  const _PetMascot({
+    required this.emoji,
+    required this.mood,
+    required this.burst,
+    required this.onTap,
+    required this.onLongPress,
+  });
+
+  @override
+  State<_PetMascot> createState() => _PetMascotState();
+}
+
+class _PetMascotState extends State<_PetMascot> with TickerProviderStateMixin {
+  late final AnimationController _loop = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 2400),
+  )..repeat();
+  late final AnimationController _hop = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 650),
+  );
+  late final AnimationController _hearts = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1500),
+  );
+
+  static const _heartEmojis = ['💕', '💜', '✨', '🌸', '💖'];
+
+  @override
+  void didUpdateWidget(covariant _PetMascot old) {
+    super.didUpdateWidget(old);
+    if (widget.burst != old.burst) {
+      _hop.forward(from: 0);
+      _hearts.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _loop.dispose();
+    _hop.dispose();
+    _hearts.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: widget.onTap,
+      onLongPress: widget.onLongPress,
+      child: SizedBox(
+        width: 60,
+        height: 60,
+        child: AnimatedBuilder(
+          animation: Listenable.merge([_loop, _hop, _hearts]),
+          builder: (context, _) {
+            final t = _loop.value;
+            final wave = math.sin(t * 2 * math.pi);
+            double dy = 0, scale = 1, rot = 0, opacity = 1;
+
+            switch (widget.mood) {
+              case _PetMood.idle:
+                scale = 1 + 0.04 * wave;
+                dy = -1.5 * wave;
+              case _PetMood.thinking:
+                rot = 0.16 * math.sin(t * 4 * math.pi);
+              case _PetMood.happy:
+                dy = -7 * math.sin(t * 4 * math.pi).abs();
+                rot = 0.08 * math.sin(t * 4 * math.pi);
+              case _PetMood.sleepy:
+                scale = 0.94 + 0.03 * wave;
+                opacity = 0.65;
+            }
+
+            final hop = math.sin(_hop.value * math.pi);
+            dy -= 18 * hop;
+            final hp = _hearts.value;
+            final showHearts = hp > 0 && hp < 1;
+
+            return Stack(
+              clipBehavior: Clip.none,
+              children: [
+                // soft shadow under the pet
+                Positioned(
+                  bottom: 2,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: Container(
+                      width: 26 * (1 - 0.3 * hop),
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                ),
+                if (showHearts)
+                  for (int i = 0; i < _heartEmojis.length; i++)
+                    Positioned(
+                      left: 24 + (i - 2) * 13.0 + (i - 2) * 6 * hp,
+                      bottom: 34 + 36 * hp + (i % 2) * 6,
+                      child: Opacity(
+                        opacity: (1 - hp).clamp(0.0, 1.0),
+                        child: Text(
+                          _heartEmojis[i],
+                          style: TextStyle(fontSize: 12.0 + (i % 2) * 3),
+                        ),
+                      ),
+                    ),
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Transform.translate(
+                      offset: Offset(0, dy),
+                      child: Transform.rotate(
+                        angle: rot,
+                        child: Transform.scale(
+                          scale: scale,
+                          child: Opacity(
+                            opacity: opacity,
+                            child: Text(
+                              widget.emoji,
+                              style: const TextStyle(fontSize: 38),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                if (widget.mood == _PetMood.sleepy)
+                  Positioned(
+                    right: -2,
+                    top: 6 - 10 * t,
+                    child: Opacity(
+                      opacity: (1 - t).clamp(0.0, 1.0),
+                      child: const Text('💤', style: TextStyle(fontSize: 14)),
+                    ),
+                  ),
+                if (widget.mood == _PetMood.thinking)
+                  Positioned(
+                    right: -4,
+                    top: -2 + 2 * wave,
+                    child: const Text('💭', style: TextStyle(fontSize: 15)),
+                  ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+/// Faint flowers / sparkles / butterflies drifting up behind the chat.
+class _FloatingDecor extends StatefulWidget {
+  const _FloatingDecor();
+
+  @override
+  State<_FloatingDecor> createState() => _FloatingDecorState();
+}
+
+class _FloatingDecorState extends State<_FloatingDecor>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(seconds: 24),
+  )..repeat();
+
+  // [emoji, x fraction, phase, font size]
+  static const List<List<Object>> _items = [
+    ['🌸', 0.08, 0.00, 16.0],
+    ['✨', 0.28, 0.35, 13.0],
+    ['💜', 0.50, 0.70, 14.0],
+    ['🌷', 0.72, 0.20, 15.0],
+    ['⭐', 0.90, 0.55, 12.0],
+    ['🦋', 0.18, 0.85, 15.0],
+    ['🐾', 0.62, 0.45, 13.0],
+  ];
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, box) {
+        return AnimatedBuilder(
+          animation: _c,
+          builder: (context, _) {
+            return Stack(
+              children: [
+                for (final it in _items)
+                  Builder(
+                    builder: (context) {
+                      final p = (_c.value + (it[2] as double)) % 1.0;
+                      final x =
+                          box.maxWidth * (it[1] as double) +
+                          14 * math.sin(p * 4 * math.pi);
+                      final y = box.maxHeight * (1 - p);
+                      return Positioned(
+                        left: x,
+                        top: y,
+                        child: Opacity(
+                          opacity: 0.22 * math.sin(p * math.pi),
+                          child: Text(
+                            it[0] as String,
+                            style: TextStyle(fontSize: it[3] as double),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }
