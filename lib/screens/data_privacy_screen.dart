@@ -122,7 +122,7 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
             child: Text(
               confirmLabel,
               style: const TextStyle(
-                color: Color(0xFFE57373),
+                color: AppColors.danger,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -310,8 +310,8 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
                 child: OutlinedButton(
                   onPressed: _confirmAndDeleteDiaryEntries,
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFFE57373),
-                    side: const BorderSide(color: Color(0xFFE57373)),
+                    foregroundColor: AppColors.danger,
+                    side: const BorderSide(color: AppColors.danger),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),

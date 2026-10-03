@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/cycle_data.dart';
 import '../models/daily_log.dart';
+import '../services/secure_store.dart';
 
 class CycleProvider extends ChangeNotifier {
   CycleData _cycleData = CycleData(
@@ -110,9 +111,9 @@ class CycleProvider extends ChangeNotifier {
     // Restore auth/profile state so a returning user skips sign-in.
     _isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
     _userName = prefs.getString('userName') ?? '';
-    _userId = prefs.getString('authUserId');
-    _authToken = prefs.getString('authToken');
-    final expiresMillis = prefs.getInt('authTokenExpiresAt');
+    _userId = await SecureStore.read(SecureStore.userIdKey);
+    _authToken = await SecureStore.read(SecureStore.tokenKey);
+    final expiresMillis = await SecureStore.readExpiryMillis();
     _tokenExpiresAt = expiresMillis != null
         ? DateTime.fromMillisecondsSinceEpoch(expiresMillis)
         : null;
@@ -124,6 +125,7 @@ class CycleProvider extends ChangeNotifier {
       _authToken = null;
       _userId = null;
       _tokenExpiresAt = null;
+      await SecureStore.clearSession();
     }
 
     _isLoaded = true;
@@ -157,12 +159,12 @@ class CycleProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('isLoggedIn', true);
     await prefs.setString('userName', name);
-    if (userId != null) await prefs.setString('authUserId', userId);
-    if (token != null) await prefs.setString('authToken', token);
+    if (userId != null) await SecureStore.write(SecureStore.userIdKey, userId);
+    if (token != null) await SecureStore.write(SecureStore.tokenKey, token);
     if (tokenExpiresAt != null) {
-      await prefs.setInt(
-        'authTokenExpiresAt',
-        tokenExpiresAt.millisecondsSinceEpoch,
+      await SecureStore.write(
+        SecureStore.expiresKey,
+        tokenExpiresAt.millisecondsSinceEpoch.toString(),
       );
     }
   }
@@ -206,7 +208,7 @@ class CycleProvider extends ChangeNotifier {
       );
       return null;
     } catch (e) {
-      debugPrint('signUp error: $e');
+      if (kDebugMode) debugPrint('signUp error: $e');
       return 'Could not reach the server. Please check your internet connection and try again.';
     }
   }
@@ -245,7 +247,7 @@ class CycleProvider extends ChangeNotifier {
       );
       return null;
     } catch (e) {
-      debugPrint('signIn error: $e');
+      if (kDebugMode) debugPrint('signIn error: $e');
       return 'Could not reach the server. Please check your internet connection and try again.';
     }
   }
@@ -294,9 +296,7 @@ class CycleProvider extends ChangeNotifier {
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('isLoggedIn', false);
-    await prefs.remove('authUserId');
-    await prefs.remove('authToken');
-    await prefs.remove('authTokenExpiresAt');
+    await SecureStore.clearSession();
 
     if (tokenToInvalidate != null) {
       try {

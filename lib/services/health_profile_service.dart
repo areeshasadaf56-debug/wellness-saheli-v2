@@ -19,6 +19,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/api_config.dart';
 import '../models/health_profile.dart';
+import 'secure_store.dart';
 
 class HealthProfileService {
   static const _deviceIdKey = 'health_profile_device_id';
@@ -27,9 +28,6 @@ class HealthProfileService {
   // Written by CycleProvider on sign-in/out -- read directly here so
   // every screen that already constructs `HealthProfileService()` picks
   // up authenticated sync automatically, with no call-site changes.
-  static const _authUserIdKey = 'authUserId';
-  static const _authTokenKey = 'authToken';
-  static const _authTokenExpiresAtKey = 'authTokenExpiresAt';
 
   String? _cachedUserId;
   HealthProfile? _cachedProfile;
@@ -57,8 +55,7 @@ class HealthProfileService {
   /// `/profile/<id>` calls whose id doesn't match the authenticated
   /// token), falling back to the anonymous per-device id otherwise.
   Future<String> _effectiveUserId() async {
-    final prefs = await SharedPreferences.getInstance();
-    final accountId = prefs.getString(_authUserIdKey);
+    final accountId = await SecureStore.read(SecureStore.userIdKey);
     if (accountId != null && accountId.isNotEmpty) return accountId;
     return getDeviceId();
   }
@@ -68,11 +65,10 @@ class HealthProfileService {
   /// backend calls will simply 401 and the existing try/catch fallbacks
   /// keep the UI on local-only data, same as being offline.
   Future<Map<String, String>> _authHeaders() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString(_authTokenKey);
+    final token = await SecureStore.read(SecureStore.tokenKey);
     if (token == null || token.isEmpty) return {};
 
-    final expiresMillis = prefs.getInt(_authTokenExpiresAtKey);
+    final expiresMillis = await SecureStore.readExpiryMillis();
     if (expiresMillis != null &&
         DateTime.fromMillisecondsSinceEpoch(
           expiresMillis,

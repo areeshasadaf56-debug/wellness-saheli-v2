@@ -46,6 +46,9 @@ dependencies:
   # AI Check-in: attaching documents/images to a chat message.
   file_picker: ^8.1.2
 
+  # Encrypted storage (Android Keystore / iOS Keychain) for the session token.
+  flutter_secure_storage: ^9.2.4
+
  
 dev_dependencies:
   flutter_test:

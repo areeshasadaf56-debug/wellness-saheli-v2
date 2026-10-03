@@ -180,7 +180,7 @@ class _MonthCalendarState extends State<MonthCalendar> {
                           width: 5,
                           height: 5,
                           decoration: const BoxDecoration(
-                            color: Color(0xFFE05C6E), // solid, fully opaque
+                            color: AppColors.periodRed, // solid, fully opaque
                             shape: BoxShape.circle,
                           ),
                         )

@@ -153,6 +153,7 @@ class _AiCheckinScreenState extends State<AiCheckinScreen> {
     });
 
     await _speech.listen(
+      // ignore: deprecated_member_use
       localeId: _language == 'ur' ? 'ur_PK' : 'en_US',
       onResult: (result) {
         setState(() {
@@ -449,8 +450,13 @@ class _AiCheckinScreenState extends State<AiCheckinScreen> {
       _pendingAttachment = null;
     });
 
+    // The server accepts at most 10 history entries, so send only the most
+    // recent ones. Sending the whole conversation made every message fail
+    // once a chat grew past 10 messages.
     final historyForRequest = _profile!.privacySettings.aiMemoryEnabled
-        ? List<ConversationEntry>.from(_messages)
+        ? (_messages.length > 10
+              ? _messages.sublist(_messages.length - 10)
+              : List<ConversationEntry>.from(_messages))
         : <ConversationEntry>[];
 
     final profileContext = _buildProfileContext();

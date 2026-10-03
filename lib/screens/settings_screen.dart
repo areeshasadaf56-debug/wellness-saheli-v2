@@ -370,7 +370,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 },
                 child: Text(
                   'Log Out',
-                  style: TextStyle(color: const Color(0xFFE57373)),
+                  style: TextStyle(color: AppColors.danger),
                 ),
               ),
             ],
@@ -381,7 +381,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: const Color(0xFFFFEBEE),
+          color: AppColors.danger.withOpacity(0.1),
           borderRadius: BorderRadius.circular(12),
         ),
         alignment: Alignment.center,
@@ -390,7 +390,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           style: AppTextStyles.sans(
             size: 14,
             weight: FontWeight.w600,
-            color: const Color(0xFFE57373),
+            color: AppColors.danger,
           ),
         ),
       ),

@@ -9,6 +9,12 @@ class AppColors {
   static const Color textPrimary = Color(0xFF2A1D3A);
   static const Color textSecondary = Color(0xFF6B5C7A);
   static const Color cardBorder = Color(0xFFE0D3EC);
+  static const Color danger = Color(0xFFE57373);
+
+  // Used by Home screen redesign
+  static const Color lavender = Color(0xFFE6D8F7);
+  static const Color blush = Color(0xFFF9E4EE);
+  static const Color ink = Color(0xFF2A1D3A);
 
   // Accent colors for Home screen redesign
   static const Color periodRed = Color(0xFFE05C6E);
@@ -28,6 +34,32 @@ class AppTextStyles {
     return GoogleFonts.playfairDisplay(
       fontSize: size,
       fontWeight: weight,
+      color: color,
+    );
+  }
+
+  /// Small spaced capitals used for section labels and tags.
+  static TextStyle label({
+    double size = 11,
+    Color color = AppColors.textPrimary,
+  }) {
+    return GoogleFonts.dmSans(
+      fontSize: size,
+      fontWeight: FontWeight.w600,
+      letterSpacing: 1.4,
+      color: color,
+    );
+  }
+
+  static TextStyle serifItalic({
+    double size = 20,
+    FontWeight weight = FontWeight.w600,
+    Color color = AppColors.textPrimary,
+  }) {
+    return GoogleFonts.playfairDisplay(
+      fontSize: size,
+      fontWeight: weight,
+      fontStyle: FontStyle.italic,
       color: color,
     );
   }

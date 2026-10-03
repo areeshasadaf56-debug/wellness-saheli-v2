@@ -766,7 +766,7 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
       'id': 'client_controlled',
       'label': 'Client controlled',
       'icon': Icons.pan_tool_outlined,
-      'color': const Color(0xFF8A9A5B),
+      'color': AppColors.ovulationTeal,
       'description':
           'Methods you can start or stop yourself, without needing a provider visit for insertion or removal.',
       'methods': [
@@ -779,7 +779,7 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
       'id': 'long_lasting',
       'label': 'Long lasting',
       'icon': Icons.calendar_month_outlined,
-      'color': const Color(0xFFB08968),
+      'color': AppColors.symptomOrange,
       'description':
           'Methods that protect for months or years at a time, with nothing to remember day-to-day.',
       'methods': [

@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 import '../config/api_config.dart';
 import '../models/ai_response.dart';
 import '../models/health_profile.dart';
+import 'secure_store.dart';
 
 /// Thrown when there's no valid session to attach to a /chat request
 /// (not signed in, or the session expired/was revoked server-side).
@@ -55,9 +55,8 @@ class AiService {
     String language = 'en',
     ChatAttachment? attachment,
   }) async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('authToken');
-    if (token == null) {
+    final token = await SecureStore.read(SecureStore.tokenKey);
+    if (token == null || token.isEmpty) {
       throw const AuthRequiredException();
     }
 

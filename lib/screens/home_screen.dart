@@ -8,6 +8,7 @@ import '../widgets/month_calendar.dart';
 import '../widgets/ai_welcome_card.dart';
 import '../widgets/ai_suggestion_card.dart';
 import 'health_diary_screen.dart';
+import 'learn_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   /// Called with a tab name ('checkin', 'pcos', 'protection', etc.) when
@@ -230,7 +231,8 @@ class _HomeScreenState extends State<HomeScreen> {
       accentColor: suggestionColor,
       prominent: false,
       onTap: () {
-        // Navigate to Learn tab or show more details
+        // Open the matching guide in the Learn tab
+        LearnScreen.openTopic(suggestionTitle);
         widget.onNavigateToTab?.call('learn');
       },
     );
