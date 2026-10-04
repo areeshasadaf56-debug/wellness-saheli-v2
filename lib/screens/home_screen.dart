@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import '../l10n/app_text.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
 import '../providers/cycle_provider.dart';

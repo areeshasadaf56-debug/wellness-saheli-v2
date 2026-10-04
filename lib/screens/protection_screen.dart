@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import '../l10n/app_text.dart';
 import '../theme/app_theme.dart';
 import '../services/eligibility_api_service.dart';
 import '../services/health_profile_service.dart';

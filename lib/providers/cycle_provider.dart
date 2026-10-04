@@ -126,12 +126,14 @@ class CycleProvider extends ChangeNotifier {
       _tokenExpiresAt = null;
     }
 
-    // No usable token means the AI Check-in (and any other authenticated
-    // endpoint) will reject every request. Treat the user as signed out so
-    // the splash screen sends them to Sign In once to get a fresh token,
-    // instead of letting them in with a "logged in" flag but no session.
-    if (_authToken == null) {
+    // "Logged in" without a valid session token (old install, expired
+    // token, cleared storage) would skip the sign-in screen but make
+    // every authenticated call -- AI Check-in included -- fail with
+    // "Please sign in". Treat it as signed out so the user is sent to
+    // sign in again and gets a fresh token.
+    if (_isLoggedIn && !hasValidSession) {
       _isLoggedIn = false;
+      await prefs.setBool('isLoggedIn', false);
     }
 
     _isLoaded = true;
@@ -204,6 +206,10 @@ class CycleProvider extends ChangeNotifier {
         return body['detail'] ?? 'Something went wrong. Please try again.';
       }
 
+      if (body['token'] == null) {
+        return 'Signed in, but the server did not return a session token. Please contact support.';
+      }
+
       await login(
         body['name'] ?? name,
         userId: body['user_id']?.toString(),
@@ -241,6 +247,10 @@ class CycleProvider extends ChangeNotifier {
 
       if (response.statusCode != 200) {
         return body['detail'] ?? 'Something went wrong. Please try again.';
+      }
+
+      if (body['token'] == null) {
+        return 'Signed in, but the server did not return a session token. Please contact support.';
       }
 
       await login(

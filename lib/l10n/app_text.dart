@@ -3,7 +3,7 @@ import 'package:flutter/material.dart' as m show Text;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'language_provider.dart';
-import 'urdu_strings.dart';
+import 'urdu_string.dart';
 
 /// Translate a string right now (use for non-Text places, e.g. hint text).
 String tr(String s) => LanguageProvider.urdu ? translate(s) : s;
