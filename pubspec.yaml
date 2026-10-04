@@ -49,7 +49,9 @@ dependencies:
   # Encrypted storage (Android Keystore / iOS Keychain) for the session token.
   flutter_secure_storage: ^9.2.4
 
- 
+   flutter_localizations:
+    sdk: flutter
+    
 dev_dependencies:
   flutter_test:
     sdk: flutter

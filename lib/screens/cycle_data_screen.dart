@@ -86,7 +86,7 @@ class _CycleDataScreenState extends State<CycleDataScreen> {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(18),
                     border: Border.all(color: AppColors.cardBorder),
                   ),
                   child: Row(
@@ -152,7 +152,7 @@ class _CycleDataScreenState extends State<CycleDataScreen> {
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: AppColors.ovulationTeal.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(18),
                   border: Border.all(
                     color: AppColors.ovulationTeal.withValues(alpha: 0.3),
                   ),
@@ -191,7 +191,7 @@ class _CycleDataScreenState extends State<CycleDataScreen> {
             height: 36,
             decoration: BoxDecoration(
               color: AppColors.surface,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(14),
               border: Border.all(color: AppColors.cardBorder),
             ),
             child: const Icon(
@@ -230,7 +230,7 @@ class _CycleDataScreenState extends State<CycleDataScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AppColors.cardBorder),
       ),
       child: Row(
@@ -280,7 +280,7 @@ class _CycleDataScreenState extends State<CycleDataScreen> {
           color: enabled
               ? AppColors.primary.withValues(alpha: 0.15)
               : AppColors.cardBorder.withValues(alpha: 0.3),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Icon(
           icon,

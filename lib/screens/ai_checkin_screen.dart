@@ -217,7 +217,7 @@ class _AiCheckinScreenState extends State<AiCheckinScreen> {
                     ),
                     decoration: BoxDecoration(
                       color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: AppColors.primary.withValues(alpha: 0.25),
                       ),
@@ -884,7 +884,7 @@ class _AiCheckinScreenState extends State<AiCheckinScreen> {
                 ),
                 decoration: BoxDecoration(
                   color: AppColors.periodRed.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(18),
                   border: Border.all(
                     color: AppColors.periodRed.withValues(alpha: 0.25),
                   ),
@@ -1096,7 +1096,7 @@ class _AiCheckinScreenState extends State<AiCheckinScreen> {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.periodRed.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AppColors.periodRed.withValues(alpha: 0.5)),
       ),
       child: Column(
@@ -1138,7 +1138,7 @@ class _AiCheckinScreenState extends State<AiCheckinScreen> {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.periodRed.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AppColors.periodRed.withValues(alpha: 0.35)),
       ),
       child: Column(
@@ -1281,7 +1281,7 @@ class _AiCheckinScreenState extends State<AiCheckinScreen> {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
       child: Column(
@@ -1334,7 +1334,7 @@ class _AiCheckinScreenState extends State<AiCheckinScreen> {
                 side: BorderSide(color: color.withValues(alpha: 0.6)),
                 padding: const EdgeInsets.symmetric(vertical: 11),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(14),
                 ),
               ),
               child: Text(
@@ -1356,7 +1356,7 @@ class _AiCheckinScreenState extends State<AiCheckinScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: AppColors.primary.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
       ),
       child: Row(
@@ -1655,7 +1655,7 @@ class _PetMascotState extends State<_PetMascot> with TickerProviderStateMixin {
                       height: 5,
                       decoration: BoxDecoration(
                         color: AppColors.primary.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(14),
                       ),
                     ),
                   ),

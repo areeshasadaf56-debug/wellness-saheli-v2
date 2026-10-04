@@ -149,7 +149,7 @@ class _MonthCalendarState extends State<MonthCalendar> {
                   margin: const EdgeInsets.only(right: _cellSpacing),
                   decoration: BoxDecoration(
                     color: bgColor,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(18),
                     border: Border.all(
                       color: borderColor,
                       width: isToday ? 1.5 : 1,

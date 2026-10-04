@@ -337,7 +337,7 @@ class _HealthDiaryScreenState extends State<HealthDiaryScreen> {
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Column(
@@ -382,7 +382,7 @@ class _HealthDiaryScreenState extends State<HealthDiaryScreen> {
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: isActive ? activeColor.withOpacity(0.18) : AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: isActive
                 ? activeColor.withOpacity(0.6)
@@ -454,7 +454,7 @@ class _HealthDiaryScreenState extends State<HealthDiaryScreen> {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: e.color.withOpacity(0.3)),
       ),
       child: Row(
@@ -465,7 +465,7 @@ class _HealthDiaryScreenState extends State<HealthDiaryScreen> {
             height: 36,
             decoration: BoxDecoration(
               color: e.color.withOpacity(0.18),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(14),
             ),
             child: Center(
               child: Text(e.emoji, style: const TextStyle(fontSize: 16)),
@@ -509,7 +509,7 @@ class _HealthDiaryScreenState extends State<HealthDiaryScreen> {
       padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: AppColors.cardBorder),
       ),
       child: Column(
@@ -601,7 +601,7 @@ class _HealthDiaryScreenState extends State<HealthDiaryScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Column(

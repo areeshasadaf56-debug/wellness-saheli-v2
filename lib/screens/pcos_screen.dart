@@ -239,7 +239,7 @@ class _PcosScreenState extends State<PcosScreen> {
           color: isActive
               ? activeColor.withValues(alpha: 0.18)
               : AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: isActive
                 ? activeColor.withValues(alpha: 0.6)
@@ -724,7 +724,7 @@ class _PcosScreenState extends State<PcosScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: AppColors.ovulationTeal.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: AppColors.ovulationTeal.withValues(alpha: 0.3),
         ),
@@ -752,7 +752,7 @@ class _PcosScreenState extends State<PcosScreen> {
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color: AppColors.ovulationTeal.withValues(alpha: 0.3),
         ),
@@ -814,7 +814,7 @@ class _PcosScreenState extends State<PcosScreen> {
         ),
         const SizedBox(height: 6),
         ClipRRect(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
           child: LinearProgressIndicator(
             value: _progress,
             minHeight: 6,
@@ -840,7 +840,7 @@ class _PcosScreenState extends State<PcosScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(color: AppColors.cardBorder),
       ),
       child: Column(
@@ -853,7 +853,7 @@ class _PcosScreenState extends State<PcosScreen> {
                 height: 36,
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(icon, size: 19, color: color),
               ),
@@ -939,15 +939,15 @@ class _PcosScreenState extends State<PcosScreen> {
               vertical: 12,
             ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(14),
               borderSide: BorderSide(color: AppColors.cardBorder),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(14),
               borderSide: BorderSide(color: AppColors.cardBorder),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(14),
               borderSide: BorderSide(color: AppColors.ovulationTeal),
             ),
           ),
@@ -1013,15 +1013,15 @@ class _PcosScreenState extends State<PcosScreen> {
         fillColor: AppColors.surface,
         contentPadding: const EdgeInsets.all(12),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: AppColors.cardBorder),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: AppColors.cardBorder),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: AppColors.ovulationTeal),
         ),
       ),
@@ -1039,7 +1039,7 @@ class _PcosScreenState extends State<PcosScreen> {
           color: isActive
               ? AppColors.ovulationTeal.withValues(alpha: 0.18)
               : AppColors.surface,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isActive
                 ? AppColors.ovulationTeal.withValues(alpha: 0.6)
@@ -1065,7 +1065,7 @@ class _PcosScreenState extends State<PcosScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
         decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(color: AppColors.cardBorder),
         ),
         child: Row(
@@ -1095,7 +1095,7 @@ class _PcosScreenState extends State<PcosScreen> {
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.ovulationTeal,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(20),
           ),
         ),
         child: _isLoading
@@ -1159,7 +1159,7 @@ class _PcosScreenState extends State<PcosScreen> {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(color: b.color.withValues(alpha: 0.5)),
       ),
       child: Column(
@@ -1228,7 +1228,7 @@ class _PcosScreenState extends State<PcosScreen> {
               style: OutlinedButton.styleFrom(
                 side: BorderSide(color: b.color.withValues(alpha: 0.6)),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(18),
                 ),
               ),
             ),
@@ -1385,7 +1385,7 @@ class _PcosScreenState extends State<PcosScreen> {
       padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
       ),
       child: Column(

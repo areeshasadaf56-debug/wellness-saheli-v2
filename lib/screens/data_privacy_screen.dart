@@ -152,7 +152,7 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: AppColors.ovulationTeal.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                     color: AppColors.ovulationTeal.withValues(alpha: 0.3),
                   ),
@@ -220,7 +220,7 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
             height: 36,
             decoration: BoxDecoration(
               color: AppColors.surface,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(14),
               border: Border.all(color: AppColors.cardBorder),
             ),
             child: const Icon(
@@ -244,7 +244,7 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.cardBorder),
       ),
       child: Column(
@@ -293,7 +293,7 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
                     side: BorderSide(color: AppColors.cardBorder),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(14),
                     ),
                   ),
                   child: Text(
@@ -314,7 +314,7 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
                     side: const BorderSide(color: AppColors.danger),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(14),
                     ),
                   ),
                   child: Text(

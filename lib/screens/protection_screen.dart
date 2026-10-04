@@ -1342,7 +1342,7 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: isActive ? activeColor.withOpacity(0.15) : AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: isActive
                 ? activeColor.withOpacity(0.6)
@@ -1506,7 +1506,7 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(color: AppColors.cardBorder),
         ),
         child: Row(
@@ -1516,7 +1516,7 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
               height: 44,
               decoration: BoxDecoration(
                 color: AppColors.periodRed.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(18),
               ),
               child: Icon(icon, color: AppColors.periodRed, size: 22),
             ),
@@ -1651,7 +1651,7 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(18),
                 ),
               ),
               onPressed: _checkingEligibility ? null : _checkEligibility,
@@ -1681,7 +1681,7 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: AppColors.periodRed.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: AppColors.periodRed.withOpacity(0.3)),
               ),
               child: Text(
@@ -1743,7 +1743,7 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
                   ),
                   padding: const EdgeInsets.symmetric(vertical: 13),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(18),
                   ),
                 ),
               ),
@@ -1759,7 +1759,7 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: AppColors.background,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AppColors.cardBorder),
       ),
       child: Row(
@@ -1780,7 +1780,7 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
           color: active ? AppColors.surface : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(14),
           boxShadow: active
               ? [
                   BoxShadow(
@@ -1810,7 +1810,7 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.cardBorder),
       ),
       child: Column(
@@ -1889,7 +1889,7 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.cardBorder),
       ),
       child: Column(
@@ -2048,7 +2048,7 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: AppColors.surface,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(20),
               border: Border.all(color: AppColors.cardBorder),
             ),
             child: Text(
@@ -2095,7 +2095,7 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
         return Container(
           decoration: BoxDecoration(
             color: AppColors.surface,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(color: AppColors.cardBorder),
           ),
           child: Column(
@@ -2325,7 +2325,7 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: r.category == null
               ? AppColors.primaryLight.withOpacity(0.45)
@@ -2342,7 +2342,7 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
                 height: 40,
                 decoration: BoxDecoration(
                   color: color.withOpacity(0.18),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(14),
                 ),
                 child: Center(
                   child: r.category == null
@@ -2405,7 +2405,7 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.cardBorder),
       ),
       child: Column(
@@ -2491,7 +2491,7 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.cardBorder),
       ),
       child: Column(
@@ -2598,7 +2598,7 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 13),
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(18),
                 ),
               ),
             ),
@@ -2683,7 +2683,7 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
         ),
         decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(18),
           border: Border(left: BorderSide(color: AppColors.primary, width: 3)),
           boxShadow: [
             BoxShadow(
@@ -2742,7 +2742,7 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(18),
         border: Border(left: BorderSide(color: AppColors.primary, width: 3)),
         boxShadow: [
           BoxShadow(
@@ -2880,7 +2880,7 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(18),
         border: Border(left: BorderSide(color: AppColors.primary, width: 3)),
         boxShadow: [
           BoxShadow(
@@ -2991,7 +2991,7 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.cardBorder),
       ),
       child: Column(
@@ -3090,7 +3090,7 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.cardBorder),
       ),
       child: Column(
@@ -3168,7 +3168,7 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
                         ),
                         decoration: BoxDecoration(
                           color: tier.color.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(14),
                           border: Border.all(
                             color: tier.color.withOpacity(0.35),
                           ),
@@ -3249,7 +3249,7 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: AppColors.surface,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(color: AppColors.cardBorder),
           ),
           child: Column(
@@ -3286,7 +3286,7 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: AppColors.surface,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(color: AppColors.cardBorder),
           ),
           child: Column(
@@ -3355,7 +3355,7 @@ class _ProtectionScreenState extends State<ProtectionScreen> {
       padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: AppColors.ovulationTeal.withOpacity(0.3)),
       ),
       child: Column(
@@ -3421,7 +3421,7 @@ class MethodCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.cardBorder),
       ),
       child: Column(
@@ -3435,7 +3435,7 @@ class MethodCard extends StatelessWidget {
                 height: 40,
                 decoration: BoxDecoration(
                   color: badgeColor.withOpacity(0.18),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(14),
                 ),
                 child: Center(child: emojiText(emoji, size: 18)),
               ),
@@ -3534,7 +3534,7 @@ class MethodCard extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 11),
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(14),
                   ),
                 ),
               ),

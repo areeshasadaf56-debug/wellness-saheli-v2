@@ -112,7 +112,7 @@ class _EndoScreenState extends State<EndoScreen> {
           color: isActive
               ? activeColor.withValues(alpha: 0.18)
               : AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: isActive
                 ? activeColor.withValues(alpha: 0.6)
@@ -268,7 +268,7 @@ class _EndoScreenState extends State<EndoScreen> {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(color: AppColors.cardBorder),
       ),
       child: Column(
@@ -316,7 +316,7 @@ class _EndoScreenState extends State<EndoScreen> {
       padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color: AppColors.ovulationTeal.withValues(alpha: 0.3),
         ),

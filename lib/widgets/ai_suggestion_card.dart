@@ -40,7 +40,7 @@ class AiSuggestionCard extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: accentColor.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: accentColor.withValues(alpha: 0.3),
             width: 1.5,
@@ -65,7 +65,7 @@ class AiSuggestionCard extends StatelessWidget {
                     height: 44,
                     decoration: BoxDecoration(
                       color: accentColor.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(14),
                     ),
                     child: Center(
                       child: Icon(icon, size: 22, color: accentColor),
@@ -126,7 +126,7 @@ class AiSuggestionCard extends StatelessWidget {
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 11),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(14),
                         ),
                       ),
                       child: Text(
@@ -155,7 +155,7 @@ class AiSuggestionCard extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(color: AppColors.cardBorder),
         ),
         child: Row(
@@ -165,7 +165,7 @@ class AiSuggestionCard extends StatelessWidget {
               height: 40,
               decoration: BoxDecoration(
                 color: accentColor.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Center(child: Icon(icon, size: 18, color: accentColor)),
             ),

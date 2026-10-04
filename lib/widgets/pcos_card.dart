@@ -47,7 +47,7 @@ class _PcosCardState extends State<PcosCard> {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.cardBorder),
       ),
       child: Column(
@@ -64,7 +64,7 @@ class _PcosCardState extends State<PcosCard> {
                     height: 40,
                     decoration: BoxDecoration(
                       color: widget.badgeColor.withValues(alpha: 0.18),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(14),
                     ),
                     child: Center(
                       child: Text(widget.emoji,

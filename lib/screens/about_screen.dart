@@ -21,7 +21,7 @@ class AboutScreen extends StatelessWidget {
                 height: 64,
                 decoration: BoxDecoration(
                   color: AppColors.primary.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(22),
                 ),
                 child: const Center(
                   child: Text('🌸', style: TextStyle(fontSize: 28)),
@@ -80,7 +80,7 @@ class AboutScreen extends StatelessWidget {
             height: 36,
             decoration: BoxDecoration(
               color: AppColors.surface,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(14),
               border: Border.all(color: AppColors.cardBorder),
             ),
             child: const Icon(

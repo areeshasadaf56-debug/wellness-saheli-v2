@@ -144,7 +144,7 @@ class OvulationScreen extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.cardBorder),
       ),
       child: Column(
@@ -262,7 +262,7 @@ class OvulationScreen extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.cardBorder),
       ),
       child: Column(
@@ -302,7 +302,7 @@ class OvulationScreen extends StatelessWidget {
       ).copyWith(bottom: isActive ? 14 : 14),
       decoration: BoxDecoration(
         color: isActive ? color.withValues(alpha: 0.08) : null,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(18),
         border: isActive
             ? Border.all(color: color.withValues(alpha: 0.5), width: 1)
             : const Border(
@@ -354,7 +354,7 @@ class OvulationScreen extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           color: color.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(14),
                         ),
                         child: Text(
                           'CURRENT PHASE',
